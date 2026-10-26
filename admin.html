@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Azimxodjayev Music · Admin</title>
+<meta name="theme-color" content="#121110">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F2B33D'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='800' font-size='26' text-anchor='middle' fill='%2317140D'%3EAZ%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+<style>
+/* Layout: admin desk. Header, connection card, settings, materials list; the editor opens as a two-column workspace (form left, audio tools right) that stacks on phones. */
+:root{
+  --bg:#121110; --surface:#1B1A17; --surface-2:#25231E; --line:#36332B;
+  --fg:#F3EFE6; --muted:#ADA698; --faint:#857F72;
+  --accent:#F2B33D; --accent-ink:#17140D; --accent-soft:#3A2F17;
+  --ok:#8FD9A8; --ok-soft:#1D3527; --warn:#F5C16B; --warn-soft:#3A2E16; --bad:#FF9B8A; --bad-soft:#3E1F1A; --info:#9CC3FF; --info-soft:#1C2840;
+  --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--body);padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
+.note{font-size:13px;color:var(--faint)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:transparent;cursor:pointer;font-weight:700;color:var(--fg);text-decoration:none}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.dangerfill{background:var(--bad);border-color:var(--bad);color:#1A0E0B}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.iconbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);display:inline-grid;place-items:center;cursor:pointer;flex:none;color:var(--fg)}
+.iconbtn svg{width:15px;height:15px}
+.iconbtn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tag{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.warn{background:var(--warn-soft);color:var(--warn)}.tag.bad{background:var(--bad-soft);color:var(--bad)}.tag.info{background:var(--info-soft);color:var(--info)}.tag.mute{background:var(--surface-2);color:var(--muted)}.tag.acc{background:var(--accent-soft);color:var(--accent)}
+.field{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);width:100%;font-size:15px}
+.field:focus{outline:none;border-color:var(--accent)}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f>span,.f>label{font-size:13px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.full{grid-column:1/-1}
+@media (max-width:640px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.card h2{font-size:22px}
+.card h3{font-size:17px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5;cursor:pointer}
+.check input{accent-color:var(--accent);width:18px;height:18px;flex:none;margin-top:2px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:600;font-size:14px}
+.seg input{accent-color:var(--accent)}
+
+.top{position:sticky;top:0;z-index:20;background:rgba(18,17,16,.95);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px;flex-wrap:wrap}
+.mark{width:34px;height:34px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:800 13px var(--display);flex:none}
+.brand{display:flex;align-items:center;gap:10px;font:800 16px var(--display);letter-spacing:.04em;flex:1;min-width:0}
+.brand span.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{display:flex;flex-direction:column;gap:20px;padding-top:20px}
+
+.dirty{position:sticky;top:57px;z-index:15;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 16px;border-radius:12px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+
+.mlist{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.mrow{display:grid;grid-template-columns:auto 48px minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.mrow:first-child{border-top:0}
+.mrow .ord{display:flex;flex-direction:column;gap:2px}
+.mrow .ord button{width:28px;height:22px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
+.mrow .ord svg{width:12px;height:12px}
+.mrow .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .mt{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;color:var(--muted);align-items:center}
+.mrow .ops{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:700px){.mrow{grid-template-columns:auto 48px minmax(0,1fr)}.mrow .ops{grid-column:1/-1;justify-content:stretch}.mrow .ops .btn{flex:1}}
+.thumb{width:48px;height:48px;border-radius:9px;overflow:hidden;position:relative;background:var(--surface-2)}
+.thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .mini{position:absolute;inset:0;background:hsl(var(--h) 34% 22%);display:grid;place-items:center;font:800 12px var(--display);color:var(--accent)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+
+.editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:960px){.editor{grid-template-columns:minmax(0,1fr)}}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;display:block}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--fg)}
+.drop strong{color:var(--fg)}
+.progress{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.alts{display:flex;flex-wrap:wrap;gap:6px}
+.alts button{min-height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
+.alts button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.conf{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--faint)}
+.conf i{display:block;width:60px;height:5px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.conf i b{display:block;height:100%;background:var(--accent)}
+.trimbox{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.trimhead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;font-weight:600}
+.introsel{position:relative;height:76px;border-radius:10px;background:var(--surface);overflow:hidden;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}
+.introsel .bars{position:absolute;inset:8px;display:flex;align-items:center;gap:1px}
+.introsel .bars i{flex:1;border-radius:1px;background:#4A463D}
+.introsel .sel{position:absolute;top:0;bottom:0;border:2px solid var(--accent);border-radius:8px;background:rgba(242,179,61,.13);cursor:grab}
+.introsel .h{position:absolute;top:0;bottom:0;width:14px;background:var(--accent);cursor:ew-resize;display:grid;place-items:center}
+.introsel .h.l{left:0;border-radius:5px 0 0 5px}.introsel .h.r{right:0;border-radius:0 5px 5px 0}
+.introsel .h::after{content:"";width:2px;height:20px;border-radius:1px;background:var(--accent-ink);opacity:.7}
+.introsel .h::before{content:"";position:absolute;top:0;bottom:0;left:-12px;right:-12px}
+.introsel .rin,.introsel .rout{position:absolute;top:0;bottom:0;pointer-events:none}
+.introsel .rin{left:0;background:linear-gradient(to top right,rgba(18,17,16,.75) 50%,transparent 50.5%)}
+.introsel .rout{right:0;background:linear-gradient(to top left,rgba(18,17,16,.75) 50%,transparent 50.5%)}
+.introsel .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--fg);pointer-events:none}
+.trimtimes{display:flex;justify-content:space-between;font-size:12px;color:var(--faint);margin-top:-4px}
+.nudges{display:flex;flex-wrap:wrap;gap:10px 20px}
+.nudge{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.nudge b{min-width:44px;text-align:center;color:var(--fg);font-weight:500}
+.faders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px}
+@media (max-width:520px){.faders{grid-template-columns:minmax(0,1fr)}}
+.fader{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--muted)}
+.fader span{display:flex;justify-content:space-between}
+.fader b{color:var(--fg);font-weight:500}
+.fader input{accent-color:var(--accent);width:100%;min-height:30px}
+.findings{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.findings li{display:flex;gap:10px;padding:8px 10px;border-radius:9px;font-size:13.5px;line-height:1.45}
+.findings li.ok{background:var(--ok-soft)}.findings li.warn{background:var(--warn-soft)}.findings li.bad{background:var(--bad-soft)}.findings li.info{background:var(--info-soft)}
+.findings li b{flex:none;font:600 11px var(--mono);padding-top:2px}
+.findings li.ok b{color:var(--ok)}.findings li.warn b{color:var(--warn)}.findings li.bad b{color:var(--bad)}.findings li.info b{color:var(--info)}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mgrid:empty{display:none}
+.mth{position:relative;aspect-ratio:4/5;border-radius:8px;overflow:hidden;background:var(--surface-2)}
+.mth img,.mth video{width:100%;height:100%;object-fit:cover;display:block}
+.mth .mi{position:absolute;left:5px;top:5px;font:600 11px var(--mono);background:rgba(0,0,0,.6);color:#fff;border-radius:4px;padding:1px 5px}
+.mth .mops{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:4px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.mth .mops button{width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-weight:700;display:grid;place-items:center}
+.log{margin:0;padding:12px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font:500 12.5px/1.7 var(--mono);color:var(--muted);max-height:220px;overflow:auto;white-space:pre-wrap}
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(8,7,6,.8);display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:48px 16px}
+.modal{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;max-width:calc(100% - 32px);text-align:center}
+.steps{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:4px;font-size:14px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span></div>
+    <span class="tag mute" id="conn-state">Ulanmagan</span>
+    <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="dirty" id="dirty" hidden><span><b>Saqlanmagan o'zgarishlar bor:</b> tartib, holat yoki sozlamalar.</span><span style="display:flex;gap:8px"><button class="btn sm" type="button" id="dirty-undo">Bekor qilish</button><button class="btn sm primary" type="button" id="dirty-save">GitHub'ga saqlash</button></span></div>
+
+  <section class="card" id="conn">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><h2>GitHub'ga ulanish</h2><button class="btn sm" type="button" id="conn-edit" hidden>O'zgartirish</button></div>
+    <div id="conn-form" style="display:flex;flex-direction:column;gap:14px">
+      <p class="note" style="margin:0">Qo'shiqlar GitHub repozitoriyingizga yoziladi, Cloudflare Pages esa ularni saytga chiqaradi. Token faqat shu brauzerda saqlanadi va parol vazifasini bajaradi.</p>
+      <div class="grid3">
+        <label class="f"><span>GitHub hisob</span><input class="field mono" id="gh-owner" placeholder="alifrecords" autocomplete="off" autocapitalize="off"></label>
+        <label class="f"><span>Repozitoriy</span><input class="field mono" id="gh-repo" placeholder="az-playlist" autocomplete="off" autocapitalize="off"></label>
+        <label class="f"><span>Branch</span><input class="field mono" id="gh-branch" value="main" autocomplete="off" autocapitalize="off"></label>
+        <label class="f full"><span>Token (Fine-grained, faqat shu repo, Contents: Read and write)</span><input class="field mono" id="gh-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" type="button" id="gh-connect">Ulanish</button><a class="btn sm" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Token yaratish</a><span class="note" id="gh-msg"></span></div>
+    </div>
+    <div id="conn-ok" hidden style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span class="tag ok">Ulangan</span><span class="mono" id="conn-repo"></span><button class="btn sm" type="button" id="gh-logout">Chiqish (tokenni o'chirish)</button></div>
+  </section>
+
+  <section class="card" id="settings" hidden>
+    <h2>Sozlamalar</h2>
+    <div class="grid2">
+      <label class="f"><span>Ijrochi / brend nomi</span><input class="field" id="s-artist" placeholder="AZIMXODJAYEV MUSIC"></label>
+      <label class="f"><span>Buyurtma uchun Telegram nik</span><input class="field mono" id="s-contact" placeholder="@nik" autocapitalize="off"></label>
+      <label class="f"><span>Mini App havolasi (ixtiyoriy)</span><input class="field mono" id="s-bot" placeholder="https://t.me/bot_nomi/app" autocapitalize="off"></label>
+      <label class="f"><span>MP3 sifati (standart)</span><select class="field" id="s-kbps"><option value="128">128 kbps</option><option value="160">160 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></label>
+    </div>
+  </section>
+
+  <section class="card" id="materials" hidden>
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><h2>Materiallar</h2><p class="note" style="margin:4px 0 0" id="m-count"></p></div>
+      <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="reload">Yangilash</button><button class="btn primary" type="button" id="add-new">+ Yangi qo'shiq</button></span>
+    </div>
+    <div class="mlist" id="mlist"></div>
+  </section>
+
+  <section id="editor" hidden>
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><h2 id="ed-title">Yangi qo'shiq</h2><button class="btn sm" type="button" id="ed-cancel">Yopish</button></div>
+    </div>
+    <div class="editor">
+      <div class="card">
+        <h3>Audio</h3>
+        <label class="drop" id="drop" for="file" tabindex="0"><strong>Audio faylni tanlang</strong> yoki shu yerga tashlang<br><span class="note">WAV, FLAC, MP3, M4A. Sayt uchun MP3 ga o'tkaziladi.</span></label>
+        <input id="file" type="file" accept="audio/*,.wav,.flac,.mp3,.m4a,.aiff" hidden>
+        <button class="btn sm" type="button" id="load-existing" hidden style="align-self:flex-start">Joriy audioni yuklab olish (introni qayta kesish uchun)</button>
+        <div id="anal" hidden><div class="note" id="anal-t">Tahlil…</div><div class="progress"><i id="anal-p"></i></div></div>
+        <div class="grid2">
+          <label class="f full"><span>Qo'shiq nomi</span><input class="field" id="e-title" autocomplete="off"></label>
+          <div class="f"><label for="e-bpm">BPM</label><input class="field mono" id="e-bpm" inputmode="numeric" placeholder="Avtomatik"><div class="conf" id="c-bpm" hidden></div><div class="alts" id="a-bpm"></div></div>
+          <div class="f"><label for="e-key">Tonallik</label><input class="field mono" id="e-key" placeholder="Avtomatik" autocomplete="off"><div class="conf" id="c-key" hidden></div><div class="alts" id="a-key"></div></div>
+          <div class="f"><label for="e-genre">Janr</label><input class="field" id="e-genre" list="genres" autocomplete="off"><datalist id="genres"><option>Pop</option><option>Estrada</option><option>Milliy-pop</option><option>R&amp;B</option><option>Ballada</option><option>Hip-hop</option></datalist><div class="conf" id="c-genre" hidden></div><div class="alts" id="a-genre"></div></div>
+          <label class="f"><span>Kimga mos</span><select class="field" id="e-voice"><option>Ayol vokali</option><option>Erkak vokali</option><option>Duet</option><option>Rep / har qanday</option><option>Instrumental</option></select></label>
+          <label class="f"><span>Kayfiyat (qisqa)</span><input class="field" id="e-mood" placeholder="Yengil, romantik"></label>
+          <label class="f"><span>Holat</span><select class="field" id="e-status"><option value="open">Sotuvda</option><option value="sold">Eksklyuziv sotilgan</option></select></label>
+          <label class="f"><span>Oddiy litsenziya narxi</span><input class="field mono" id="e-p1" placeholder="Masalan: 1 500 000 so'm"></label>
+          <label class="f"><span>Eksklyuziv narxi</span><input class="field mono" id="e-p2" placeholder="Masalan: 5 000 000 so'm"></label>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Turi">
+          <label><input type="radio" name="kind" id="k-full" value="full" checked>To'liq qo'shiq</label>
+          <label><input type="radio" name="kind" id="k-intro" value="intro">Faqat intro (≤ 2:30)</label>
+        </div>
+        <div class="trimbox">
+          <div class="trimhead"><span>Vizual slaydlar: rasm, video yoki GIF</span><span class="tag mute mono" id="media-count">0 / 4</span></div>
+          <div class="mgrid" id="mgrid"></div>
+          <button type="button" class="btn sm" id="madd" style="align-self:flex-start">+ Rasm, video yoki GIF qo'shish</button>
+          <input id="mfile" type="file" accept="image/*,video/mp4,video/webm" multiple hidden>
+          <p class="note" style="margin:0">Birinchi slayd muqova. 4:5 format (1080×1350), har bir fayl 25 MB gacha. Video saytda ovozsiz aylanadi.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Kesish, sifat va joylash</h3>
+        <div id="nobuf" class="note">Audio tanlanganda bu yerda parcha kesish, fader va sifat hisoboti chiqadi.</div>
+        <div class="trimbox" id="introbox" hidden>
+          <div class="trimhead"><span id="intro-title">INTROSONGS uchun parcha</span><span class="tag acc mono" id="intro-lbl"></span></div>
+          <div class="introsel" id="introsel" role="group" aria-label="Parchani tanlash">
+            <div class="bars" id="intro-bars"></div>
+            <div class="sel" id="intro-sel"><span class="rin" id="r-in"></span><span class="rout" id="r-out"></span><span class="h l" data-h="l" aria-hidden="true"></span><span class="h r" data-h="r" aria-hidden="true"></span></div>
+            <div class="ph" id="intro-ph" hidden></div>
+          </div>
+          <div class="trimtimes mono"><span>0:00</span><span id="intro-total">0:00</span></div>
+          <div class="nudges" id="nudges">
+            <div class="nudge"><span>Boshi</span><button type="button" class="btn sm" data-nudge="s,-1">−1s</button><b class="mono" id="sel-s">0:00</b><button type="button" class="btn sm" data-nudge="s,1">+1s</button></div>
+            <div class="nudge"><span>Oxiri</span><button type="button" class="btn sm" data-nudge="e,-1">−1s</button><b class="mono" id="sel-e">0:00</b><button type="button" class="btn sm" data-nudge="e,1">+1s</button></div>
+          </div>
+          <div class="faders">
+            <label class="fader" for="u-fin"><span>Fade-in <b class="mono" id="fin-v">1.0 s</b></span><input type="range" id="u-fin" min="0" max="5" step="0.5" value="1"></label>
+            <label class="fader" for="u-fout"><span>Fade-out <b class="mono" id="fout-v">2.0 s</b></span><input type="range" id="u-fout" min="0" max="6" step="0.5" value="2"></label>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn sm primary" id="pv-sel">Parchani tinglash</button>
+            <button type="button" class="btn sm" id="pv-full">Butun faylni tinglash</button>
+            <button type="button" class="btn sm" id="pv-chorus">Naqarotga qaytarish</button>
+          </div>
+          <p class="note" style="margin:0">O'ng chetini sudrasangiz oxiridan 3 soniya oldin chaladi, chap chetida boshidan 3 soniya. Fader 0 = o'chiq.</p>
+          <label class="check" id="mk-wrap"><input type="checkbox" id="mkintro" checked><span>Shu parchadan intro yaratib, INTROSONGS'ga qo'shish</span></label>
+        </div>
+        <div class="f" id="q-wrap" hidden><label for="e-kbps">Saytga chiqadigan MP3 sifati</label><select class="field" id="e-kbps"></select><span class="note" id="q-est"></span></div>
+        <div id="report"></div>
+        <label class="check"><input type="checkbox" id="e-own"><span><b>Bu asarning muallifi va huquq egasi menman.</b> Asar mualliflik huquqi bilan himoyalangan holda joylanadi.</span></label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" type="button" id="ed-save" disabled>GitHub'ga joylash</button><span class="note" id="ed-hint"></span></div>
+        <pre class="log" id="log" hidden></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="help">
+    <h2>Qanday ishlaydi</h2>
+    <ol class="steps">
+      <li>Bu sahifa qo'shiqni brauzeringizda tahlil qiladi, MP3 ga o'tkazadi va GitHub repozitoriyingizga yozadi.</li>
+      <li>Cloudflare Pages repo o'zgarganini ko'rib, saytni 1–2 daqiqada yangilaydi.</li>
+      <li>Playlist sayti har ochilganda <span class="mono">playlist.json</span> dan eng yangi ro'yxatni o'qiydi.</li>
+      <li>Asl WAV va stemlar bu yerga yuklanmaydi: ularni xaridorga to'lovdan keyin Telegram orqali yuborasiz.</li>
+    </ol>
+  </section>
+</main>
+
+<div class="scrim" id="scrim" hidden><div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="m-title"></div></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function fmt(s){s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function keyLabel(k){return k?String(k).replace("#","♯"):"—"}
+function hueOf(id){var s=7;for(var i=0;i<id.length;i++)s=(s*31+id.charCodeAt(i))%360;return s}
+var tt=0;function toast(m,ms){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true},ms||3200)}
+var nextFrame=function(){return new Promise(function(r){setTimeout(r,0)})};
+var MAX_FILE=25*1048576,INTRO_MAX=150,MINLEN=10,MAXM=4;
+var PLAY_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>',PAUSE_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
+
+/* ================= GitHub ================= */
+var CFG={owner:"",repo:"",branch:"main",token:""};
+try{var c0=JSON.parse(localStorage.getItem("az_gh")||"null");if(c0)CFG=Object.assign(CFG,c0)}catch(e){}
+function saveCfg(){try{localStorage.setItem("az_gh",JSON.stringify(CFG))}catch(e){}}
+async function gh(path,opt){
+  opt=opt||{};
+  var r=await fetch("https://api.github.com/repos/"+encodeURIComponent(CFG.owner)+"/"+encodeURIComponent(CFG.repo)+path,{
+    method:opt.method||"GET",
+    headers:Object.assign({"Authorization":"Bearer "+CFG.token,"Accept":opt.accept||"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.body?{"Content-Type":"application/json"}:{}),
+    body:opt.body?JSON.stringify(opt.body):undefined,cache:"no-store"
+  });
+  if(!r.ok){
+    var msg="GitHub xatosi "+r.status;
+    if(r.status===401)msg="Token noto'g'ri yoki muddati tugagan.";
+    else if(r.status===403)msg="Ruxsat yo'q: tokenga shu repo uchun Contents: Read and write huquqini bering.";
+    else if(r.status===404&&!opt.allow404)msg="Repo yoki fayl topilmadi. Hisob, repo va branch nomini tekshiring.";
+    else if(r.status===409)msg="Repo bo'sh. Avval loyiha fayllarini repoga yuklang.";
+    else if(r.status===422)msg="GitHub so'rovni qabul qilmadi (422). Sahifani yangilab, qayta urinib ko'ring.";
+    var err=new Error(msg);err.status=r.status;throw err;
+  }
+  if(opt.raw)return r;
+  return r.status===204?null:r.json();
+}
+function b64FromBlob(blob){return new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){var s=String(fr.result);res(s.slice(s.indexOf(",")+1))};fr.onerror=rej;fr.readAsDataURL(blob)})}
+async function commitFiles(files,message,onLog){
+  var log=onLog||function(){};
+  var ref=await gh("/git/ref/heads/"+encodeURIComponent(CFG.branch));
+  var base=ref.object.sha;
+  var bc=await gh("/git/commits/"+base);
+  var tree=[];
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(f.data===null){tree.push({path:f.path,mode:"100644",type:"blob",sha:null});log("o'chiriladi: "+f.path);continue}
+    var blob=typeof f.data==="string"?new Blob([f.data],{type:"application/json"}):f.data;
+    log("yuklanmoqda ("+(i+1)+"/"+files.length+"): "+f.path+" · "+(blob.size/1048576).toFixed(2)+" MB");
+    var b=await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(blob),encoding:"base64"}});
+    tree.push({path:f.path,mode:"100644",type:"blob",sha:b.sha});
+  }
+  var nt=await gh("/git/trees",{method:"POST",body:{base_tree:bc.tree.sha,tree:tree}});
+  var cm=await gh("/git/commits",{method:"POST",body:{message:message,tree:nt.sha,parents:[base]}});
+  await gh("/git/refs/heads/"+encodeURIComponent(CFG.branch),{method:"PATCH",body:{sha:cm.sha}});
+  log("commit: "+cm.sha.slice(0,7)+" · tayyor");
+  return cm.sha;
+}
+async function readRepoFile(path){
+  var r=await gh("/contents/"+path.split("/").map(encodeURIComponent).join("/")+"?ref="+encodeURIComponent(CFG.branch),{accept:"application/vnd.github.raw",raw:true,allow404:true});
+  return r;
+}
+
+/* ================= data ================= */
+var DATA=null,SAVED="";
+function pjson(){return JSON.stringify(DATA,null,2)+"\n"}
+function markDirty(){$("dirty").hidden=pjson()===SAVED}
+async function loadPlaylist(){
+  try{
+    var r=await readRepoFile("playlist.json");
+    DATA=await r.json();
+  }catch(e){
+    if(e.status===404)DATA={settings:{},tracks:[]};else throw e;
+  }
+  DATA.settings=DATA.settings||{};DATA.tracks=DATA.tracks||[];
+  SAVED=pjson();markDirty();fillSettings();renderList();
+}
+function fillSettings(){
+  var s=DATA.settings;$("s-artist").value=s.artist||"";$("s-contact").value=s.contact||"";$("s-bot").value=s.botApp||"";$("s-kbps").value=String(s.kbps||192);
+}
+["s-artist","s-contact","s-bot","s-kbps"].forEach(function(id){$(id).addEventListener("input",function(){
+  var s=DATA.settings;s.artist=$("s-artist").value.trim();var c=$("s-contact").value.trim().replace(/^@?/,"@");s.contact=c==="@"?"":c;s.botApp=$("s-bot").value.trim();s.kbps=+$("s-kbps").value;markDirty();
+})});
+$("dirty-save").addEventListener("click",async function(){
+  var b=this;b.disabled=true;
+  try{await commitFiles([{path:"playlist.json",data:pjson()}],"Playlist yangilandi");SAVED=pjson();markDirty();toast("Saqlandi. Sayt 1–2 daqiqada yangilanadi.")}
+  catch(e){toast(e.message,5000)}finally{b.disabled=false}
+});
+$("dirty-undo").addEventListener("click",function(){DATA=JSON.parse(SAVED);fillSettings();renderList();markDirty()});
+window.addEventListener("beforeunload",function(e){if(DATA&&pjson()!==SAVED){e.preventDefault();e.returnValue=""}});
+
+/* ================= connection ================= */
+$("gh-owner").value=CFG.owner;$("gh-repo").value=CFG.repo;$("gh-branch").value=CFG.branch||"main";$("gh-token").value=CFG.token;
+async function connect(){
+  $("gh-msg").textContent="Tekshirilmoqda…";
+  try{
+    var info=await gh("");
+    if(info.permissions&&!info.permissions.push)throw new Error("Bu token bilan repoga yozib bo'lmaydi.");
+    await loadPlaylist();
+    $("conn-form").hidden=true;$("conn-ok").hidden=false;$("conn-edit").hidden=false;$("conn-repo").textContent=CFG.owner+"/"+CFG.repo+" · "+CFG.branch;
+    $("conn-state").textContent="Ulangan";$("conn-state").className="tag ok";
+    $("settings").hidden=false;$("materials").hidden=false;$("gh-msg").textContent="";
+  }catch(e){$("gh-msg").textContent=e.message;$("conn-state").textContent="Ulanmagan";$("conn-state").className="tag mute"}
+}
+$("gh-connect").addEventListener("click",function(){
+  CFG.owner=$("gh-owner").value.trim();CFG.repo=$("gh-repo").value.trim();CFG.branch=$("gh-branch").value.trim()||"main";CFG.token=$("gh-token").value.trim();
+  if(!CFG.owner||!CFG.repo||!CFG.token){$("gh-msg").textContent="Hisob, repo va tokenni kiriting.";return}
+  saveCfg();connect();
+});
+$("conn-edit").addEventListener("click",function(){$("conn-form").hidden=false;$("conn-ok").hidden=true});
+$("gh-logout").addEventListener("click",function(){CFG.token="";saveCfg();$("gh-token").value="";location.reload()});
+$("reload").addEventListener("click",async function(){try{await loadPlaylist();toast("Ro'yxat yangilandi.")}catch(e){toast(e.message,5000)}});
+if(CFG.owner&&CFG.repo&&CFG.token)connect();
+
+/* ================= materials list ================= */
+function thumbHTML(t){
+  var m=t.media&&t.media[0];
+  if(m&&m.type==="image")return '<span class="thumb"><img src="'+esc(rawUrl(m.src))+'" alt="" loading="lazy" onerror="this.remove()"></span>';
+  return '<span class="thumb"><span class="mini" style="--h:'+hueOf(t.id)+'">'+(m&&m.type==="video"?"VID":"AZ")+'</span></span>';
+}
+function rawUrl(p){return "https://raw.githubusercontent.com/"+CFG.owner+"/"+CFG.repo+"/"+CFG.branch+"/"+p}
+function renderList(){
+  var T=DATA.tracks;
+  $("m-count").textContent=T.filter(function(t){return !t.introOnly}).length+" ta qo'shiq · "+T.filter(function(t){return t.intro}).length+" ta intro";
+  if(!T.length){$("mlist").innerHTML='<div class="empty">Hozircha material yo\'q. "+ Yangi qo\'shiq" tugmasi bilan birinchisini joylang.</div>';return}
+  var up='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',dn='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  $("mlist").innerHTML=T.map(function(t,i){
+    return '<div class="mrow"><div class="ord"><button type="button" data-up="'+i+'" aria-label="Yuqoriga">'+up+'</button><button type="button" data-down="'+i+'" aria-label="Pastga">'+dn+'</button></div>'+thumbHTML(t)+
+      '<div style="min-width:0"><div class="nm">'+esc(t.title)+'</div><div class="mt">'+(t.introOnly?'<span class="tag info">Intro</span>':'<span class="tag mute">Qo\'shiq</span>')+(t.status==="sold"?'<span class="tag mute">Sotilgan</span>':'<span class="tag ok">Sotuvda</span>')+(t.featured?'<span class="tag acc">Tavsiya</span>':'')+
+      '<span>'+esc(t.genre||"—")+' · <span class="mono">'+esc(t.bpm||"—")+' BPM · '+esc(keyLabel(t.key))+' · '+fmt(t.duration)+'</span></span>'+(t.intro&&!t.introOnly?'<span class="mono">intro '+fmt(t.intro.duration)+'</span>':'')+(t.media&&t.media.length?'<span>'+t.media.length+' slayd</span>':'')+'</div></div>'+
+      '<div class="ops"><button type="button" class="btn sm" data-feat="'+i+'">'+(t.featured?"Tavsiyadan olish":"Tavsiya qilish")+'</button><button type="button" class="btn sm" data-edit="'+i+'">Tahrirlash</button><button type="button" class="btn sm" data-repl="'+i+'">Almashtirish</button><button type="button" class="btn sm danger" data-del="'+i+'">O\'chirish</button></div></div>';
+  }).join("");
+}
+$("mlist").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;var T=DATA.tracks,i;
+  if(b.hasAttribute("data-up")){i=+b.getAttribute("data-up");if(i>0){var x=T[i];T[i]=T[i-1];T[i-1]=x;renderList();markDirty()}return}
+  if(b.hasAttribute("data-down")){i=+b.getAttribute("data-down");if(i<T.length-1){var y=T[i];T[i]=T[i+1];T[i+1]=y;renderList();markDirty()}return}
+  if(b.hasAttribute("data-feat")){i=+b.getAttribute("data-feat");var on=!T[i].featured;T.forEach(function(t){delete t.featured});if(on)T[i].featured=true;renderList();markDirty();return}
+  if(b.hasAttribute("data-edit")){openEditor(T[+b.getAttribute("data-edit")],false);return}
+  if(b.hasAttribute("data-repl")){openEditor(T[+b.getAttribute("data-repl")],true);return}
+  if(b.hasAttribute("data-del")){askDelete(T[+b.getAttribute("data-del")])}
+});
+function trackPaths(t){var p=[t.audio];if(t.intro&&t.intro.file&&t.intro.file!==t.audio)p.push(t.intro.file);(t.media||[]).forEach(function(m){p.push(m.src)});return p.filter(Boolean)}
+function askDelete(t){
+  if(pjson()!==SAVED){toast("Avval saqlanmagan o'zgarishlarni saqlang yoki bekor qiling.");return}
+  openModal('<h2 id="m-title">Materialni o\'chirish</h2><p style="margin:0;color:var(--muted)"><b style="color:var(--fg)">"'+esc(t.title)+'"</b> va uning barcha fayllari (audio, intro, slaydlar) repodan o\'chiriladi. Sayt 1–2 daqiqada yangilanadi.</p>'+
+    '<p class="note" style="margin:0">GitHub tarixida eski versiya saqlanib qoladi, kerak bo\'lsa qaytarish mumkin.</p>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn dangerfill" type="button" id="del-ok">O\'chirish</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
+  $("del-ok").addEventListener("click",async function(){
+    this.disabled=true;this.textContent="O'chirilmoqda…";
+    var before=JSON.stringify(DATA);
+    try{
+      DATA.tracks=DATA.tracks.filter(function(x){return x.id!==t.id});
+      var used={};DATA.tracks.forEach(function(x){trackPaths(x).forEach(function(p){used[p]=1})});
+      var files=trackPaths(t).filter(function(p){return !used[p]}).map(function(p){return {path:p,data:null}});files.push({path:"playlist.json",data:pjson()});
+      await commitFiles(files,"O'chirildi: "+t.title);SAVED=pjson();markDirty();renderList();closeModal();toast("\""+t.title+"\" o'chirildi.");
+    }catch(e){DATA=JSON.parse(before);renderList();closeModal();toast(e.message,5000)}
+  });
+}
+function openModal(h){$("modal").innerHTML=h;$("scrim").hidden=false;var f=$("modal").querySelector("button");if(f)f.focus()}
+function closeModal(){$("scrim").hidden=true;$("modal").innerHTML=""}
+$("scrim").addEventListener("click",function(e){if(e.target===this||e.target.closest("[data-close]"))closeModal()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("scrim").hidden)closeModal()});
+
+/* ================= audio analysis ================= */
+var ctx=null,master=null;
+function ensureCtx(){if(!ctx){var AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();master=ctx.createGain();master.connect(ctx.destination)}if(ctx.state==="suspended")ctx.resume();return ctx}
+var PCS=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+function fft(re,im){
+  var n=re.length,i,j=0,k,m;
+  for(i=1;i<n;i++){var bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){var t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+  for(var len=2;len<=n;len<<=1){var ang=-2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang);
+    for(i=0;i<n;i+=len){var cr=1,ci=0;for(k=0;k<len/2;k++){var a=i+k,b=a+len/2,xr=re[b]*cr-im[b]*ci,xi=re[b]*ci+im[b]*cr;re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;m=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=m}}}
+}
+function mono(buf){var n=buf.length,m=new Float32Array(n),c=buf.numberOfChannels;for(var ch=0;ch<c;ch++){var d=buf.getChannelData(ch);for(var i=0;i<n;i++)m[i]+=d[i]/c}return m}
+function segment(m,sr,maxSec){var len=Math.min(m.length,Math.floor(maxSec*sr));var start=Math.max(0,Math.floor((m.length-len)*0.35));return m.subarray(start,start+len)}
+function detectTempo(x,sr){
+  var hop=256,win=1024,n=Math.floor((x.length-win)/hop);if(n<200)return null;
+  var ps=new Float64Array(x.length+1);for(var i=0;i<x.length;i++)ps[i+1]=ps[i]+x[i]*x[i];
+  var env=new Float32Array(n),prev=0;
+  for(var f=0;f<n;f++){var s=f*hop,e=Math.log(1e-10+ps[s+win]-ps[s]);env[f]=Math.max(0,e-prev);prev=e}
+  var W=16,acc=0,sm=new Float32Array(n);for(f=0;f<n;f++){acc+=env[f];if(f>=W)acc-=env[f-W];sm[f]=Math.max(0,env[f]-acc/Math.min(f+1,W))}
+  var fps=sr/hop,lmin=Math.floor(60*fps/200),lmax=Math.ceil(60*fps/55),r=new Float32Array(lmax+2),best=-1,bl=0,sum=0,cnt=0;
+  for(var l=lmin;l<=lmax+1;l++){var a=0;for(f=0;f+l<n;f++)a+=sm[f]*sm[f+l];r[l]=a/(n-l)}
+  for(l=lmin+1;l<=lmax;l++){var bpm=60*fps/l,w=Math.exp(-0.5*Math.pow(Math.log2(bpm/115)/0.95,2)),v=r[l]*w;sum+=v;cnt++;if(v>best){best=v;bl=l}}
+  var y0=r[bl-1],y1=r[bl],y2=r[bl+1],den=y0-2*y1+y2,off=den!==0?0.5*(y0-y2)/den:0;if(Math.abs(off)>1)off=0;
+  var tempo=60*fps/(bl+off);while(tempo<70)tempo*=2;while(tempo>185)tempo/=2;
+  var mean=sum/cnt,conf=Math.max(0.35,Math.min(0.97,(best-mean)/(best+1e-12)*1.15));tempo=Math.round(tempo);
+  var alts=[tempo];if(tempo/2>=55)alts.unshift(Math.round(tempo/2));if(tempo*2<=220)alts.push(tempo*2);
+  return {bpm:tempo,conf:conf,alts:alts};
+}
+var PROF_MAJ=[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88],PROF_MIN=[6.33,2.68,3.52,5.38,2.6,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+function corr(a,b){var ma=0,mb=0,i;for(i=0;i<12;i++){ma+=a[i];mb+=b[i]}ma/=12;mb/=12;var num=0,da=0,db2=0;for(i=0;i<12;i++){var x=a[i]-ma,y=b[i]-mb;num+=x*y;da+=x*x;db2+=y*y}return num/Math.sqrt(da*db2+1e-12)}
+async function spectral(x,sr,onProg){
+  var N=8192,frames=Math.min(240,Math.floor(x.length/N));if(frames<4)return null;
+  var step=Math.floor((x.length-N)/frames),re=new Float64Array(N),im=new Float64Array(N),hann=new Float64Array(N),chroma=new Float64Array(12),low=0,mid=0,high=0;
+  for(var i=0;i<N;i++)hann[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  var kmin=Math.floor(55*N/sr),kmax=Math.min(N/2-1,Math.floor(2100*N/sr));
+  for(var fr=0;fr<frames;fr++){
+    var s=fr*step;for(i=0;i<N;i++){re[i]=x[s+i]*hann[i];im[i]=0}
+    fft(re,im);
+    for(var k=1;k<N/2;k++){var mag=Math.sqrt(re[k]*re[k]+im[k]*im[k]),hz=k*sr/N;
+      if(hz<150)low+=mag;else if(hz<4000)mid+=mag;else high+=mag;
+      if(k>=kmin&&k<=kmax){var midi=69+12*Math.log2(hz/440),pc=((Math.round(midi)%12)+12)%12;chroma[pc]+=Math.sqrt(mag)}}
+    if(fr%24===0){if(onProg)onProg(fr/frames);await nextFrame()}
+  }
+  var tot=low+mid+high+1e-12;return {chroma:chroma,low:low/tot,high:high/tot};
+}
+function detectKey(chroma){
+  var res=[];
+  for(var t=0;t<12;t++){var pM=[],pm=[];for(var i=0;i<12;i++){pM.push(PROF_MAJ[(i-t+12)%12]);pm.push(PROF_MIN[(i-t+12)%12])}
+    res.push({name:PCS[t],mode:"M",r:corr(chroma,pM),t:t});res.push({name:PCS[t]+"m",mode:"m",r:corr(chroma,pm),t:t})}
+  res.sort(function(a,b){return b.r-a.r});
+  var b=res[0],rel=b.mode==="m"?PCS[(b.t+3)%12]:PCS[(b.t+9)%12]+"m";
+  var conf=Math.max(0.35,Math.min(0.95,0.45+(b.r-res[1].r)*3+(b.r-0.5)*0.4));
+  var alts=[b.name,rel];if(res[1].name!==rel)alts.push(res[1].name);
+  return {key:b.name,conf:conf,alts:alts};
+}
+function suggestGenre(bpm,sp,rmsDb){
+  var C={"Ballada":[70,10],"Hip-hop":[90,8],"R&B":[95,9],"Estrada":[110,9],"Pop":[118,8],"Milliy-pop":[126,7]},out=[];
+  for(var g in C){var c=C[g],d=Math.min(Math.abs(bpm-c[0]),Math.abs(bpm/2-c[0]),Math.abs(bpm*2-c[0])*1.3),s=Math.exp(-0.5*Math.pow(d/c[1],2));
+    if(sp){if(g==="Hip-hop"||g==="R&B")s*=1+sp.low*2.2;if(g==="Ballada")s*=rmsDb<-18?1.4:0.8;if(g==="Milliy-pop"||g==="Pop")s*=1+sp.high*3}
+    out.push({g:g,s:s})}
+  out.sort(function(a,b){return b.s-a.s});var tot=out.reduce(function(a,b){return a+b.s},0)+1e-9;
+  return {genre:out[0].g,conf:Math.min(0.8,out[0].s/tot+0.15),alts:out.slice(0,3).map(function(o){return o.g})};
+}
+function rmsTrack(x,sr){var w=Math.floor(sr/2),n=Math.floor(x.length/w),rms=[];for(var i=0;i<n;i++){var a=0;for(var j=i*w;j<(i+1)*w;j+=4)a+=x[j]*x[j];rms.push(Math.sqrt(a/(w/4)))}return rms}
+function detectChorus(rms,dur){
+  var n=rms.length,len=Math.round(Math.min(INTRO_MAX,Math.max(30,dur*0.4))*2);if(len>=n)return {start:0,len:Math.min(dur,INTRO_MAX)};
+  var acc=0,best=-1,bi=0;for(var i=0;i<n;i++){acc+=rms[i];if(i>=len)acc-=rms[i-len];if(i>=len-1&&acc>best){best=acc;bi=i-len+1}}
+  return {start:bi/2,len:len/2};
+}
+function peaksOf(buf,N){var d=buf.getChannelData(0),d2=buf.numberOfChannels>1?buf.getChannelData(1):null,bs=Math.floor(d.length/N),out=[],mx=0;
+  for(var i=0;i<N;i++){var m=0;for(var j=i*bs;j<(i+1)*bs;j+=8){var v=Math.abs(d[j]);if(d2)v=Math.max(v,Math.abs(d2[j]));if(v>m)m=v}out.push(m);if(m>mx)mx=m}
+  return out.map(function(v){return Math.round(v/(mx||1)*100)/100})}
+function parseWav(ab){try{var v=new DataView(ab);if(v.getUint32(0,false)!==0x52494646||v.getUint32(8,false)!==0x57415645)return null;var o=12;while(o+8<=v.byteLength){var id=v.getUint32(o,false),sz=v.getUint32(o+4,true);if(id===0x666d7420)return {ch:v.getUint16(o+10,true),sr:v.getUint32(o+12,true),bits:v.getUint16(o+22,true)};o+=8+sz+(sz%2)}}catch(e){}return null}
+function dbv(x){return x>0?20*Math.log10(x):-Infinity}
+
+/* ================= MP3 encoding ================= */
+async function encodeMp3(buffer,start,len,kbps,fin,fout,onProg){
+  if(typeof lamejs==="undefined")throw new Error("MP3 kodlovchi yuklanmadi. Internetni tekshirib, sahifani yangilang.");
+  var sr=[32000,44100,48000].indexOf(buffer.sampleRate)>=0?buffer.sampleRate:44100;
+  var ch=Math.min(2,buffer.numberOfChannels),frames=Math.max(1,Math.ceil(len*sr));
+  var oc=new OfflineAudioContext(ch,frames,sr),src=oc.createBufferSource(),g=oc.createGain();
+  src.buffer=buffer;src.connect(g);g.connect(oc.destination);
+  fin=Math.min(fin||0,len/2);fout=Math.min(fout||0,len/2);
+  g.gain.setValueAtTime(fin>0?0.0001:1,0);if(fin>0)g.gain.linearRampToValueAtTime(1,fin);
+  if(fout>0){g.gain.setValueAtTime(1,Math.max(0,len-fout));g.gain.linearRampToValueAtTime(0.0001,len)}
+  src.start(0,start,len);
+  var r=await oc.startRendering();
+  var enc=new lamejs.Mp3Encoder(ch,sr,kbps),L=r.getChannelData(0),R=ch>1?r.getChannelData(1):null,BS=1152,out=[];
+  function i16(a,s,e){var o=new Int16Array(e-s);for(var k=s;k<e;k++){var v=Math.max(-1,Math.min(1,a[k]));o[k-s]=v<0?v*32768:v*32767}return o}
+  for(var i=0,blk=0;i<L.length;i+=BS,blk++){
+    var e=Math.min(L.length,i+BS),mp=R?enc.encodeBuffer(i16(L,i,e),i16(R,i,e)):enc.encodeBuffer(i16(L,i,e));
+    if(mp.length)out.push(new Uint8Array(mp));
+    if(blk%150===0){if(onProg)onProg(i/L.length);await nextFrame()}
+  }
+  var fl=enc.flush();if(fl.length)out.push(new Uint8Array(fl));
+  return new Blob(out,{type:"audio/mpeg"});
+}
+
+/* ================= editor ================= */
+var E=null;
+function slug(s){var t=(s||"").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g,"").replace(/[‘’ʻʼ'`"]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);return t||"qoshiq"}
+function stamp(){return Date.now().toString(36).slice(-6)}
+function kindVal(){return document.querySelector("input[name=kind]:checked").value}
+function openEditor(t,replace){
+  if(pjson()!==SAVED){toast("Avval saqlanmagan o'zgarishlarni saqlang yoki bekor qiling.");return}
+  pvStop();
+  E={orig:t||null,replace:!!replace,file:null,buffer:null,dur:0,det:null,sel:null,fin:t&&t.intro&&t.intro.fin!=null?t.intro.fin:1,fout:t&&t.intro&&t.intro.fout!=null?t.intro.fout:2,slides:t?(t.media||[]).map(function(m){return {k:"keep",m:m,url:rawUrl(m.src)}}):[],srcMp3:false,fromExisting:false,stats:null,trimTouched:false};
+  $("ed-title").textContent=!t?"Yangi qo'shiq":replace?"Almashtirish: "+t.title:"Tahrirlash: "+t.title;
+  $("e-title").value=t?t.title:"";$("e-bpm").value=t&&t.bpm||"";$("e-key").value=t&&t.key||"";$("e-genre").value=t&&t.genre||"";
+  $("e-voice").value=t&&t.voice||"Ayol vokali";$("e-mood").value=t&&t.mood||"";$("e-status").value=t&&t.status||"open";
+  $("e-p1").value=t&&t.prices&&t.prices.basic||"";$("e-p2").value=t&&t.prices&&t.prices.exclusive||"";
+  $(t&&t.introOnly?"k-intro":"k-full").checked=true;
+  $("mkintro").checked=!t||!!t.intro;$("u-fin").value=E.fin;$("u-fout").value=E.fout;
+  ["c-bpm","c-key","c-genre"].forEach(function(i){$(i).hidden=true});["a-bpm","a-key","a-genre"].forEach(function(i){$(i).innerHTML=""});
+  $("e-own").checked=false;$("file").value="";$("introbox").hidden=true;$("q-wrap").hidden=true;$("report").innerHTML="";$("nobuf").hidden=false;$("log").hidden=true;$("log").textContent="";
+  $("drop").hidden=!!(t&&!replace);$("load-existing").hidden=!(t&&!replace);
+  renderMgrid();updateSave();
+  $("editor").hidden=false;$("editor").scrollIntoView({behavior:"smooth"});
+}
+function closeEditor(){pvStop();E=null;$("editor").hidden=true;$("materials").scrollIntoView({behavior:"smooth"})}
+$("ed-cancel").addEventListener("click",closeEditor);
+$("add-new").addEventListener("click",function(){openEditor(null,false)});
+
+var drop=$("drop");
+["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over")})});
+["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over")})});
+drop.addEventListener("drop",function(e){var f=e.dataTransfer&&e.dataTransfer.files[0];if(f)handleFile(f,false)});
+drop.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();$("file").click()}});
+$("file").addEventListener("change",function(){if(this.files[0])handleFile(this.files[0],false)});
+$("load-existing").addEventListener("click",async function(){
+  if(!E||!E.orig)return;var b=this;b.disabled=true;b.textContent="Yuklanmoqda…";
+  try{var r=await readRepoFile(E.orig.audio);var blob=await r.blob();await handleFile(new File([blob],E.orig.audio.split("/").pop(),{type:"audio/mpeg"}),true);b.hidden=true}
+  catch(e){toast(e.message,5000)}finally{b.disabled=false;b.textContent="Joriy audioni yuklab olish (introni qayta kesish uchun)"}
+});
+function prog(p,t){$("anal").hidden=false;$("anal-p").style.width=Math.round(p*100)+"%";if(t)$("anal-t").textContent=t}
+function setConf(id,c,tag){var el=$(id);el.hidden=false;el.innerHTML='<span class="tag '+(tag==="TAKLIF"?"info":"acc")+'">'+tag+'</span><i><b style="width:'+Math.round(c*100)+'%"></b></i><span class="mono">'+Math.round(c*100)+'%</span>'}
+function setAlts(id,list,input,fn){var el=$(id);el.innerHTML=list.map(function(v){return '<button type="button" data-v="'+esc(v)+'" aria-pressed="'+(String(input.value)===String(v))+'">'+esc(fn?fn(v):v)+'</button>'}).join("");el.onclick=function(e){var b=e.target.closest("[data-v]");if(!b)return;input.value=b.getAttribute("data-v");setAlts(id,list,input,fn)}}
+
+async function handleFile(file,fromExisting){
+  if(!E)return;pvStop();
+  E.file=file;E.buffer=null;E.fromExisting=fromExisting;E.srcMp3=/\.mp3$/i.test(file.name)||file.type==="audio/mpeg";
+  if(!fromExisting&&!E.orig&&!$("e-title").value)$("e-title").value=file.name.replace(/\.[^.]+$/,"").replace(/^©\s*/,"").replace(/[_]+/g," ").trim();
+  $("report").innerHTML="";$("introbox").hidden=true;updateSave();
+  prog(0.05,"Fayl o'qilmoqda…");await nextFrame();
+  try{
+    var ab=await file.arrayBuffer();var wav=parseWav(ab.slice(0,Math.min(ab.byteLength,8192)));
+    ensureCtx();prog(0.15,"Audio ochilmoqda…");
+    var buf=await ctx.decodeAudioData(ab.slice(0));
+    prog(0.3,"Sifat tekshirilmoqda…");await nextFrame();
+    var peak=0,sum=0,n=0,clips=0;
+    for(var c=0;c<buf.numberOfChannels;c++){var d=buf.getChannelData(c);for(var i=0;i<d.length;i++){var a=d[i]<0?-d[i]:d[i];if(a>peak)peak=a;sum+=d[i]*d[i];if(a>=0.9995)clips++}n+=d.length}
+    E.buffer=buf;E.dur=buf.duration;E.stats={peak:dbv(peak),rms:dbv(Math.sqrt(sum/n)),clips:clips,wav:wav,ext:(file.name.split(".").pop()||"").toLowerCase(),size:file.size};
+    var m=mono(buf),sr=buf.sampleRate;E.rms=rmsTrack(m,sr);E.peaks=peaksOf(buf,120);
+    if(!fromExisting){
+      prog(0.45,"BPM aniqlanmoqda…");await nextFrame();
+      var tempo=detectTempo(segment(m,sr,60),sr);
+      prog(0.6,"Tonallik aniqlanmoqda…");
+      var sp=await spectral(segment(m,sr,90),sr,function(p){$("anal-p").style.width=Math.round((0.6+p*0.25)*100)+"%"});
+      var key=sp?detectKey(sp.chroma):null,genre=suggestGenre(tempo?tempo.bpm:110,sp,E.stats.rms);
+      E.det={tempo:tempo,key:key,genre:genre};
+      if(tempo){$("e-bpm").value=tempo.bpm;setConf("c-bpm",tempo.conf,"AVTO");setAlts("a-bpm",tempo.alts,$("e-bpm"))}
+      if(key){$("e-key").value=key.key;setConf("c-key",key.conf,"AVTO");setAlts("a-key",key.alts,$("e-key"),keyLabel)}
+      if(!$("e-genre").value||!E.orig){$("e-genre").value=genre.genre}setConf("c-genre",genre.conf,"TAKLIF");setAlts("a-genre",genre.alts,$("e-genre"));
+    }
+    var ch=detectChorus(E.rms,E.dur);E.chorus=ch;
+    if(E.orig&&E.orig.intro&&E.orig.intro.start!=null&&(fromExisting||E.replace))E.sel={start:Math.min(E.orig.intro.start,Math.max(0,E.dur-MINLEN)),len:Math.min(E.orig.intro.duration,INTRO_MAX,E.dur)};
+    else E.sel={start:ch.start,len:ch.len};
+    E.trimTouched=false;
+    prog(1,"Tahlil tugadi");setTimeout(function(){$("anal").hidden=true},800);
+    $("nobuf").hidden=true;renderIntroBox();renderQuality();renderReport();updateSave();
+  }catch(err){
+    E.buffer=null;$("anal").hidden=true;$("report").innerHTML='<ul class="findings"><li class="bad"><b>XATO</b><span>Bu faylni brauzer o\'qiy olmadi. WAV yoki MP3 formatida qayta saqlab ko\'ring.</span></li></ul>';updateSave();
+  }
+}
+function renderReport(){
+  var st=E.stats,F=[];
+  if(st.clips>32)F.push(["bad","CLIP",st.clips.toLocaleString("en-US")+" ta namuna 0 dBFS ga urilgan. Limiter chegarasini pasaytiring."]);
+  F.push(st.peak>-1?["warn","PEAK","Cho'qqi "+st.peak.toFixed(1)+" dBFS. MP3 da yashirin clipping bo'lmasligi uchun −1 dB zaxira qoldiring."]:["ok","PEAK","Cho'qqi "+st.peak.toFixed(1)+" dBFS, zaxira yetarli."]);
+  if(st.rms>-9)F.push(["warn","SIQ","O'rtacha balandlik juda yuqori ("+st.rms.toFixed(1)+" dB). Bunday master quloqni charchatadi."]);
+  else F.push(["ok","DIN","Dinamika: "+st.rms.toFixed(1)+" dB RMS."]);
+  if(st.wav&&st.wav.bits<24)F.push(["info","BIT",st.wav.bits+"-bit WAV. Master uchun 24-bit tavsiya etiladi."]);
+  F.push(["info","DUR","Davomiylik "+fmt(E.dur)+(st.wav?" · "+(st.wav.sr/1000)+" kHz":"")+" · "+(st.size/1048576).toFixed(1)+" MB"]);
+  $("report").innerHTML='<ul class="findings">'+F.map(function(f){return '<li class="'+f[0]+'"><b>'+f[1]+'</b><span>'+esc(f[2])+'</span></li>'}).join("")+'</ul>';
+}
+function renderQuality(){
+  var def=+(DATA.settings.kbps||192),opts=[];
+  if(E.srcMp3&&E.stats.size<=MAX_FILE&&!E.fromExisting)opts.push(['orig',"Asl MP3, o'zgartirmasdan ("+(E.stats.size/1048576).toFixed(1)+" MB)"]);
+  [128,160,192,256,320].forEach(function(k){opts.push([String(k),k+" kbps MP3"])});
+  $("e-kbps").innerHTML=opts.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>'}).join("");
+  $("e-kbps").value=opts[0][0]==="orig"?"orig":String(def);
+  $("q-wrap").hidden=E.fromExisting;estimate();
+}
+function kbpsVal(){var v=$("e-kbps").value;return v==="orig"?null:+v}
+function estimate(){
+  if(!E||!E.buffer)return;var k=kbpsVal()||192,full=kindVal()==="full";
+  var mb=function(sec){return (k*1000*sec/8/1048576)};
+  var parts=[];if(full)parts.push("To'liq: "+(kbpsVal()?mb(E.dur).toFixed(1)+" MB":"asl fayl"));
+  if(!full||$("mkintro").checked)parts.push("Intro: "+mb(E.sel.len).toFixed(1)+" MB");
+  $("q-est").textContent=parts.join(" · ")+" · har bir fayl 25 MB gacha";
+}
+$("e-kbps").addEventListener("change",estimate);
+document.querySelectorAll("input[name=kind]").forEach(function(r){r.addEventListener("change",function(){if(E&&E.buffer){renderIntroBox();estimate()}updateSave()})});
+$("mkintro").addEventListener("change",function(){E&&(E.trimTouched=true);estimate()});
+["e-title","e-own"].forEach(function(id){$(id).addEventListener("input",updateSave);$(id).addEventListener("change",updateSave)});
+
+/* ----- trim UI ----- */
+function renderIntroBox(){
+  var full=kindVal()==="full";$("introbox").hidden=false;
+  $("intro-title").textContent=full?"INTROSONGS uchun parcha":"Joylanadigan parcha (faqat intro)";$("mk-wrap").hidden=!full;
+  var r=E.rms,mx=0,N=window.innerWidth<520?60:110,h="";for(var j=0;j<r.length;j++)if(r[j]>mx)mx=r[j];
+  for(var i=0;i<N;i++){var v=mx?(r[Math.floor(i/N*r.length)]||0)/mx:0.4;h+='<i style="height:'+Math.max(4,Math.round(v*56))+'px"></i>'}
+  $("intro-bars").innerHTML=h;$("intro-total").textContent=fmt(E.dur);paintSel();
+}
+function setSel(st,len){var mn=Math.min(MINLEN,E.dur);len=Math.max(mn,Math.min(INTRO_MAX,len,E.dur));st=Math.max(0,Math.min(st,E.dur-len));E.sel={start:st,len:len};E.trimTouched=true;paintSel();estimate()}
+function paintSel(){
+  var s=E.sel,sel=$("intro-sel");sel.style.left=(s.start/E.dur*100)+"%";sel.style.width=(s.len/E.dur*100)+"%";
+  $("sel-s").textContent=fmt(s.start);$("sel-e").textContent=fmt(s.start+s.len);
+  $("intro-lbl").textContent=fmt(s.start)+" — "+fmt(s.start+s.len)+" · "+fmt(s.len)+" / 2:30";
+  $("r-in").style.width=Math.min(50,E.fin/s.len*100)+"%";$("r-out").style.width=Math.min(50,E.fout/s.len*100)+"%";
+  $("fin-v").textContent=E.fin.toFixed(1)+" s";$("fout-v").textContent=E.fout.toFixed(1)+" s";
+}
+(function(){
+  var box=$("introsel"),mode=null,x0=0,s0=0,l0=0;
+  function secAt(cx){var r=box.getBoundingClientRect();return Math.min(Math.max(0,(cx-r.left)/r.width),1)*E.dur}
+  box.addEventListener("pointerdown",function(e){
+    if(!E||!E.buffer)return;var hd=e.target.closest("[data-h]");
+    if(hd)mode=hd.getAttribute("data-h");else if(e.target.closest("#intro-sel"))mode="m";else{mode="m";setSel(secAt(e.clientX)-E.sel.len/2,E.sel.len)}
+    try{box.setPointerCapture(e.pointerId)}catch(_){}
+    x0=secAt(e.clientX);s0=E.sel.start;l0=E.sel.len;e.preventDefault();
+    if(mode==="r")audition("e",true);else if(mode==="l")audition("s",true);
+  });
+  box.addEventListener("pointermove",function(e){
+    if(!mode)return;var d=secAt(e.clientX)-x0;
+    if(mode==="m")setSel(s0+d,l0);
+    else if(mode==="l"){var end=s0+l0,ns=Math.max(end-INTRO_MAX,Math.min(s0+d,end-Math.min(MINLEN,E.dur)));setSel(ns,end-ns)}
+    else setSel(s0,Math.min(l0+d,E.dur-s0));
+    if(mode==="r")audition("e");else if(mode==="l")audition("s");
+  });
+  var up=function(){if(!mode)return;var m=mode;mode=null;if(m==="r")audition("e",true);else if(m==="l")audition("s",true);else if(PV.which==="sel")pvPlaySel()};
+  box.addEventListener("pointerup",up);box.addEventListener("pointercancel",up);
+})();
+$("nudges").addEventListener("click",function(e){
+  var b=e.target.closest("[data-nudge]");if(!b||!E||!E.sel)return;var p=b.getAttribute("data-nudge").split(","),d=+p[1];
+  if(p[0]==="s"){var end=E.sel.start+E.sel.len,ns=Math.max(end-INTRO_MAX,Math.min(E.sel.start+d,end-Math.min(MINLEN,E.dur)));setSel(ns,end-ns)}
+  else setSel(E.sel.start,Math.min(E.sel.len+d,E.dur-E.sel.start));
+  audition(p[0],true);
+});
+$("u-fin").addEventListener("input",function(){if(!E)return;E.fin=+this.value;E.trimTouched=true;if(E.buffer){paintSel();audition("s")}else $("fin-v").textContent=E.fin.toFixed(1)+" s"});
+$("u-fout").addEventListener("input",function(){if(!E)return;E.fout=+this.value;E.trimTouched=true;if(E.buffer){paintSel();audition("e")}else $("fout-v").textContent=E.fout.toFixed(1)+" s"});
+var PV={src:null,gain:null,which:null,from:0,t0:0,raf:0},lastAud=0;
+function audition(edge,force){
+  if(!E||!E.sel||!E.buffer)return;var t=performance.now();if(!force&&t-lastAud<280)return;lastAud=t;
+  var st=E.sel.start,en=st+E.sel.len;
+  if(edge==="e"){var from=Math.max(st,en-3);pvStart(from,en,"aud",from<=st?E.fin:0,E.fout)}else pvStart(st,Math.min(en,st+3),"aud",E.fin,0);
+}
+function pvStop(){if(PV.src){var s=PV.src,g=PV.gain;PV.src=null;try{var n=ctx.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0.0001,n+0.03);s.stop(n+0.04)}catch(e){try{s.stop()}catch(_){}}}cancelAnimationFrame(PV.raf);$("intro-ph").hidden=true;PV.which=null;pvBtns()}
+function pvBtns(){$("pv-sel").textContent=PV.which==="sel"?"To'xtatish":"Parchani tinglash";$("pv-full").textContent=PV.which==="full"?"To'xtatish":"Butun faylni tinglash"}
+function pvStart(from,to,which,fin,fout){
+  pvStop();ensureCtx();var s=ctx.createBufferSource(),g=ctx.createGain(),now=ctx.currentTime,dur=Math.max(0.1,to-from);
+  s.buffer=E.buffer;s.connect(g);g.connect(master);fin=Math.min(fin||0,dur/2);fout=Math.min(fout||0,dur/2);
+  g.gain.setValueAtTime(0.0001,now);g.gain.linearRampToValueAtTime(1,now+(fin>0?fin:0.015));
+  if(fout>0){g.gain.setValueAtTime(1,now+dur-fout);g.gain.linearRampToValueAtTime(0.0001,now+dur)}
+  s.start(now,from,dur);PV.src=s;PV.gain=g;PV.which=which;PV.from=from;PV.t0=now;
+  s.onended=function(){if(PV.src===s){PV.src=null;PV.which=null;$("intro-ph").hidden=true;cancelAnimationFrame(PV.raf);pvBtns()}};
+  (function tk(){if(PV.src!==s)return;var pos=PV.from+(ctx.currentTime-PV.t0),ph=$("intro-ph");ph.hidden=false;ph.style.left=(pos/E.dur*100)+"%";PV.raf=requestAnimationFrame(tk)})();
+  pvBtns();
+}
+function pvPlaySel(){if(E&&E.sel)pvStart(E.sel.start,E.sel.start+E.sel.len,"sel",E.fin,E.fout)}
+$("pv-sel").addEventListener("click",function(){if(!E||!E.buffer)return;if(PV.which==="sel")pvStop();else pvPlaySel()});
+$("pv-full").addEventListener("click",function(){if(!E||!E.buffer)return;if(PV.which==="full")pvStop();else pvStart(0,E.dur,"full",0,0)});
+$("pv-chorus").addEventListener("click",function(){if(!E||!E.chorus)return;setSel(E.chorus.start,E.chorus.len);if(PV.which==="sel")pvPlaySel()});
+
+/* ----- media ----- */
+function renderMgrid(){
+  if(!E)return;var all=E.slides;
+  $("media-count").textContent=all.length+" / "+MAXM;$("madd").disabled=all.length>=MAXM;
+  $("mgrid").innerHTML=all.map(function(x,i){
+    var inner=x.m.type==="video"?'<video src="'+esc(x.url)+'" muted playsinline loop autoplay preload="metadata"></video>':'<img src="'+esc(x.url)+'" alt="'+(i+1)+'-slayd" onerror="this.style.opacity=0">';
+    return '<div class="mth">'+inner+'<span class="mi">'+(i+1)+(i===0?" · muqova":"")+'</span><div class="mops"><button type="button" data-mm="'+i+',-1" aria-label="'+(i+1)+'-slaydni chapga">‹</button><button type="button" data-md="'+i+'" aria-label="'+(i+1)+'-slaydni olib tashlash">×</button><button type="button" data-mm="'+i+',1" aria-label="'+(i+1)+'-slaydni o\'ngga">›</button></div></div>';
+  }).join("");
+}
+$("madd").addEventListener("click",function(){$("mfile").click()});
+$("mfile").addEventListener("change",function(){
+  var files=[].slice.call(this.files||[]),skip=0,big=0;
+  files.forEach(function(f){
+    if(E.slides.length>=MAXM){skip++;return}
+    var tp=/^image\//.test(f.type)?"image":/^video\/(mp4|webm)$/.test(f.type)?"video":null;if(!tp){skip++;return}
+    if(f.size>MAX_FILE){big++;return}
+    var ext=(f.name.split(".").pop()||"").toLowerCase().replace(/[^a-z0-9]/g,"")||(tp==="video"?"mp4":"jpg");
+    var url=URL.createObjectURL(f);E.slides.push({k:"new",m:{type:tp,file:f,ext:ext},url:url});
+  });
+  this.value="";renderMgrid();
+  if(big)toast("25 MB dan katta fayl qo'shilmadi. Siqib qayta yuklang.");else if(skip)toast("Ko'pi bilan 4 ta slayd: rasm, GIF, MP4 yoki WebM.");
+});
+$("mgrid").addEventListener("click",function(e){
+  var all=E.slides,d=e.target.closest("[data-md]"),mv=e.target.closest("[data-mm]");
+  if(d){var x=all.splice(+d.getAttribute("data-md"),1)[0];if(x&&x.k==="new")URL.revokeObjectURL(x.url)}
+  else if(mv){var p=mv.getAttribute("data-mm").split(","),i=+p[0],j=i+(+p[1]);if(j<0||j>=all.length)return;var y=all[i];all[i]=all[j];all[j]=y}
+  else return;
+  renderMgrid();
+});
+
+/* ----- save ----- */
+function updateSave(){
+  if(!E){return}
+  var needAudio=!E.orig||E.replace,ok=$("e-title").value.trim()&&$("e-own").checked&&(!needAudio||E.buffer);
+  $("ed-save").disabled=!ok;
+  $("ed-hint").textContent=needAudio&&!E.buffer?"Audio faylni tanlang.":!$("e-title").value.trim()?"Qo'shiq nomini yozing.":!$("e-own").checked?"Mualliflikni tasdiqlang.":"Tayyor.";
+  $("ed-save").textContent=!E.orig?"GitHub'ga joylash":E.replace?"Almashtirib joylash":"O'zgarishlarni saqlash";
+}
+function logLine(s){var l=$("log");l.hidden=false;l.textContent+=s+"\n";l.scrollTop=l.scrollHeight}
+$("ed-save").addEventListener("click",async function(){
+  if(!E||this.disabled)return;var btn=this;btn.disabled=true;pvStop();$("log").textContent="";
+  var before=JSON.stringify(DATA),files=[],del=[];
+  try{
+    var o=E.orig,kind=kindVal(),id=o?o.id:slug($("e-title").value)+"-"+stamp(),st=stamp(),k=kbpsVal();
+    while(!o&&DATA.tracks.some(function(t){return t.id===id}))id=slug($("e-title").value)+"-"+stamp();
+    var t=o?JSON.parse(JSON.stringify(o)):{id:id,added:new Date().toISOString().slice(0,10)};
+    t.title=$("e-title").value.trim();t.genre=$("e-genre").value.trim();t.bpm=parseInt($("e-bpm").value,10)||null;t.key=$("e-key").value.trim().replace("♯","#")||null;
+    t.voice=$("e-voice").value;t.mood=$("e-mood").value.trim();t.status=$("e-status").value;
+    t.prices={basic:$("e-p1").value.trim(),exclusive:$("e-p2").value.trim()};
+    var base="music/"+slug(t.title)+"-"+st;
+    var newAudio=E.buffer&&!E.fromExisting;
+    if(newAudio){
+      if(kind==="full"){
+        var full;
+        if(k===null){full=E.file;logLine("asl MP3 o'zgartirmasdan olinadi")}
+        else{logLine("to'liq qo'shiq MP3 ga o'tkazilmoqda ("+k+" kbps)…");full=await encodeMp3(E.buffer,0,E.dur,k,0,0,function(p){$("ed-hint").textContent="Kodlanmoqda: "+Math.round(p*100)+"%"})}
+        if(full.size>MAX_FILE)throw new Error("To'liq fayl "+(full.size/1048576).toFixed(1)+" MB. Sifatni pasaytiring (25 MB gacha).");
+        files.push({path:base+".mp3",data:full});
+        if(o){del.push(o.audio)}
+        t.audio=base+".mp3";t.duration=Math.round(E.dur*10)/10;t.peaks=E.peaks;delete t.introOnly;
+      }
+    }
+    var wantIntro=kind==="intro"||$("mkintro").checked;
+    var introChanged=newAudio||(E.fromExisting&&E.trimTouched);
+    if(wantIntro&&introChanged&&E.buffer){
+      logLine("intro kesilmoqda: "+fmt(E.sel.start)+" — "+fmt(E.sel.start+E.sel.len)+"…");
+      var ib=await encodeMp3(E.buffer,E.sel.start,E.sel.len,Math.min(k||192,256),E.fin,E.fout,function(p){$("ed-hint").textContent="Intro kodlanmoqda: "+Math.round(p*100)+"%"});
+      if(ib.size>MAX_FILE)throw new Error("Intro fayli 25 MB dan katta.");
+      var ip=base+"-intro.mp3";files.push({path:ip,data:ib});
+      if(o&&o.intro&&o.intro.file&&o.intro.file!==o.audio)del.push(o.intro.file);
+      t.intro={file:ip,duration:Math.round(E.sel.len*10)/10,start:Math.round(E.sel.start*10)/10,fin:E.fin,fout:E.fout};
+      if(kind==="intro"){if(o&&o.audio)del.push(o.audio);t.audio=ip;t.introOnly=true;t.duration=t.intro.duration;t.peaks=E.peaks}
+    }else if(!wantIntro&&o&&o.intro&&!o.introOnly){del.push(o.intro.file);delete t.intro}
+    else if(!wantIntro&&!o){delete t.intro}
+    if(!t.audio)throw new Error("Audio fayl yo'q.");
+    var seq=E.slides;
+    var newMedia=[];
+    seq.forEach(function(x,i){
+      if(x.k==="keep")newMedia.push(x.m);
+      else{var p="media/"+slug(t.title)+"-"+st+"-"+(i+1)+"."+x.m.ext;files.push({path:p,data:x.m.file});newMedia.push({type:x.m.type,src:p})}
+    });
+    (o&&o.media||[]).forEach(function(m){if(!newMedia.some(function(n){return n.src===m.src}))del.push(m.src)});
+    t.media=newMedia;
+    if(o){var idx=DATA.tracks.findIndex(function(x){return x.id===o.id});DATA.tracks[idx]=t}else DATA.tracks.unshift(t);
+    var used2={};DATA.tracks.forEach(function(x){trackPaths(x).forEach(function(p){used2[p]=1})});
+    del.filter(function(p,i){return p&&del.indexOf(p)===i&&!used2[p]&&!files.some(function(f){return f.path===p})}).forEach(function(p){files.push({path:p,data:null})});
+    files.push({path:"playlist.json",data:pjson()});
+    logLine("GitHub'ga yozilmoqda…");
+    await commitFiles(files,(o?(E.replace?"Almashtirildi: ":"Tahrirlandi: "):"Qo'shildi: ")+t.title,logLine);
+    SAVED=pjson();markDirty();renderList();
+    toast(o?"Saqlandi. Sayt 1–2 daqiqada yangilanadi.":"\""+t.title+"\" joylandi. Sayt 1–2 daqiqada yangilanadi.",4500);
+    E.slides.forEach(function(x){if(x.k==="new")URL.revokeObjectURL(x.url)});
+    closeEditor();
+  }catch(e){
+    DATA=JSON.parse(before);renderList();logLine("XATO: "+e.message);toast(e.message,6000);btn.disabled=false;updateSave();
+  }
+});
+})();
+</script>
+</body>
+</html>

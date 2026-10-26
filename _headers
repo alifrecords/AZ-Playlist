@@ -1,0 +1,17 @@
+/playlist.json
+  Cache-Control: no-cache, must-revalidate
+
+/music/*
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Disposition: inline
+
+/media/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/admin.html
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
