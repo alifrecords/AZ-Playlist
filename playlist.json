@@ -157,7 +157,8 @@
           "type": "video",
           "src": "media/azimxodjaev-music-shikastaman-pdfnhy-1.mp4"
         }
-      ]
+      ],
+      "featured": true
     }
   ]
 }
