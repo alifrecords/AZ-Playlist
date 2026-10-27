@@ -162,15 +162,15 @@
     {
       "id": "azimxodjayev-music-armon-q5jiva",
       "added": "2026-10-27",
-      "title": "Azimxodjayev Music - Armon",
+      "title": "Armon",
       "genre": "Ballada",
       "bpm": 136,
       "key": "A#m",
-      "voice": "Duet",
+      "voice": "Ayol vokali",
       "mood": "Sevgi",
       "status": "open",
       "prices": {
-        "basic": "100$",
+        "basic": "150$",
         "exclusive": "200$"
       },
       "intro": {
@@ -307,8 +307,8 @@
       ],
       "media": [
         {
-          "type": "video",
-          "src": "media/azimxodjayev-music-armon-q5jiva-1.mp4"
+          "type": "image",
+          "src": "media/armon-q6cj0f-1.jpg"
         }
       ]
     },
