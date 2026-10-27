@@ -410,6 +410,12 @@ async function connect(){
   try{
     var info=await gh("");
     if(info.permissions&&!info.permissions.push)throw new Error("Bu token bilan repoga yozib bo'lmaydi.");
+    /* Repo nomi yoki egasi o'zgargan bo'lsa (masalan az-playlist → AZ-Playlist), yangi nomga o'tamiz:
+       aks holda GitHub fayl yuborishni yo'naltiradi va brauzer "Failed to fetch" beradi. */
+    if(info.owner&&info.owner.login&&info.name&&(info.owner.login!==CFG.owner||info.name!==CFG.repo)){
+      CFG.owner=info.owner.login;CFG.repo=info.name;saveCfg();
+      try{$("gh-owner").value=CFG.owner;$("gh-repo").value=CFG.repo}catch(e){}
+    }
     await loadPlaylist();
     $("conn-form").hidden=true;$("conn-ok").hidden=false;$("conn-edit").hidden=false;$("conn-repo").textContent=CFG.owner+"/"+CFG.repo+" · "+CFG.branch;
     $("conn-state").textContent="Ulangan";$("conn-state").className="tag ok";
