@@ -348,7 +348,7 @@ function renderList(){
     var m=modeFor(t),on=cur.t&&cur.t.id===t.id&&cur.mode===m;
     return '<button type="button" class="row'+(on?" cur":"")+(on&&au.paused?" paused":"")+'" data-row="'+t.id+'" aria-label="'+esc(t.title)+' tinglash">'+thumbHTML(t,on)+
       '<span class="tx"><span class="nm">'+esc(t.title)+'</span><span class="mt">'+esc(t.genre||"")+' · <span class="mono">'+esc(t.bpm||"—")+' BPM · '+esc(keyLabel(t.key))+'</span>'+(t.voice?' · '+esc(t.voice):'')+'</span></span>'+
-      (t.status==="sold"?'<span class="tag mute sold">Sotilgan</span>':'')+'<span class="du">'+fmt(durOf(t,m))+'</span></button>';
+      (t.status==="sold"?'<span class="tag mute sold">Sotilgan</span>':(t.prices&&t.prices.basic?'<span class="tag acc sold">'+esc(t.prices.basic)+'</span>':''))+'<span class="du">'+fmt(durOf(t,m))+'</span></button>';
   }).join("");
 }
 function setTab(t){TAB=t;$("tab-full").setAttribute("aria-selected",String(t==="full"));$("tab-intro").setAttribute("aria-selected",String(t==="intro"));renderList();hap()}
@@ -485,8 +485,8 @@ $("sh-order").addEventListener("click",function(){
   hap("medium");openTg("https://t.me/"+n+"?text="+encodeURIComponent(msg));
 });
 function linkFor(id){
-  var st=DATA.settings||{};
-  if(st.botApp&&/^https:\/\/t\.me\/[\w\/]+$/.test(st.botApp))return st.botApp+(id?"?startapp="+encodeURIComponent(id):"");
+  var st=DATA.settings||{},ba=String(st.botApp||"").trim().replace(/^(https?:\/\/)?(www\.)?(t\.me|telegram\.me)\//i,"https://t.me/").replace(/\/+$/,"");
+  if(/^https:\/\/t\.me\/[\w\/]+$/.test(ba))return ba+(id?"?startapp="+encodeURIComponent(id):"");
   return location.origin+location.pathname+(id?"#t-"+id:"");
 }
 function share(id,title){
