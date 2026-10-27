@@ -98,6 +98,7 @@ main{display:flex;flex-direction:column;gap:20px;padding-top:20px}
 @media (max-width:960px){.editor{grid-template-columns:minmax(0,1fr)}}
 .drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;display:block}
 .drop:hover,.drop.over{border-color:var(--accent);color:var(--fg)}
+body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 .drop strong{color:var(--fg)}
 .progress{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
 .progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
@@ -192,7 +193,7 @@ main{display:flex;flex-direction:column;gap:20px;padding-top:20px}
   <section class="card" id="materials" hidden>
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
       <div><h2>Materiallar</h2><p class="note" style="margin:4px 0 0" id="m-count"></p></div>
-      <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="reload">Yangilash</button><button class="btn primary" type="button" id="add-new">+ Yangi qo'shiq</button></span>
+      <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="nettest">Ulanishni tekshirish</button><button class="btn sm" type="button" id="reload">Yangilash</button><button class="btn primary" type="button" id="add-new">+ Yangi qo'shiq</button></span>
     </div>
     <div class="mlist" id="mlist"></div>
   </section>
@@ -204,7 +205,7 @@ main{display:flex;flex-direction:column;gap:20px;padding-top:20px}
     <div class="editor">
       <div class="card">
         <h3>Audio</h3>
-        <label class="drop" id="drop" for="file" tabindex="0"><strong>Audio faylni tanlang</strong> yoki shu yerga tashlang<br><span class="note">WAV, FLAC, MP3, M4A. Sayt uchun MP3 ga o'tkaziladi.</span></label>
+        <label class="drop" id="drop" for="file" tabindex="0"><strong>Audio faylni tanlang</strong> yoki shu yerga tashlang<br><span class="note">WAV, FLAC, MP3, M4A. Sayt uchun MP3 ga o'tkaziladi. Kompyuterda audio va muqova rasmni birga sudrab tashlash mumkin; saqlash: Ctrl+S.</span></label>
         <input id="file" type="file" accept="audio/*,.wav,.flac,.mp3,.m4a,.aiff" hidden>
         <button class="btn sm" type="button" id="load-existing" hidden style="align-self:flex-start">Joriy audioni yuklab olish (introni qayta kesish uchun)</button>
         <div id="anal" hidden><div class="note" id="anal-t">Tahlil…</div><div class="progress"><i id="anal-p"></i></div></div>
@@ -316,13 +317,23 @@ var PLAY_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><
 var CFG={owner:"",repo:"",branch:"main",token:""};
 try{var c0=JSON.parse(localStorage.getItem("az_gh")||"null");if(c0)CFG=Object.assign(CFG,c0)}catch(e){}
 function saveCfg(){try{localStorage.setItem("az_gh",JSON.stringify(CFG))}catch(e){}}
+var NET_MSG="Internet orqali GitHub'ga ulanib bo'lmadi. Antivirus (Kaspersky, ESET, Avast), VPN yoki proksi katta fayl yuborishni bloklayotgan bo'lishi mumkin: ularni vaqtincha o'chirib qayta urinib ko'ring yoki «Ulanishni tekshirish» tugmasini bosing.";
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
 async function gh(path,opt){
   opt=opt||{};
-  var r=await fetch("https://api.github.com/repos/"+encodeURIComponent(CFG.owner)+"/"+encodeURIComponent(CFG.repo)+path,{
-    method:opt.method||"GET",
-    headers:Object.assign({"Authorization":"Bearer "+CFG.token,"Accept":opt.accept||"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.body?{"Content-Type":"application/json"}:{}),
-    body:opt.body?JSON.stringify(opt.body):undefined,cache:"no-store"
-  });
+  var body=opt.body?JSON.stringify(opt.body):undefined,r=null,lastErr=null;
+  for(var tr=0;tr<3;tr++){
+    try{
+      r=await fetch("https://api.github.com/repos/"+encodeURIComponent(CFG.owner)+"/"+encodeURIComponent(CFG.repo)+path,{
+        method:opt.method||"GET",
+        headers:Object.assign({"Authorization":"Bearer "+CFG.token,"Accept":opt.accept||"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},body?{"Content-Type":"application/json"}:{}),
+        body:body,cache:"no-store"
+      });
+      if(r.status>=500||r.status===429){lastErr=null;if(tr<2){if(opt.onRetry)opt.onRetry(tr+1);await wait(1500*(tr+1));continue}}
+      break;
+    }catch(e){r=null;lastErr=e;if(tr<2){if(opt.onRetry)opt.onRetry(tr+1);await wait(1500*(tr+1))}}
+  }
+  if(!r){var ne=new Error(NET_MSG);ne.status=0;ne.cause=lastErr;throw ne}
   if(!r.ok){
     var msg="GitHub xatosi "+r.status;
     if(r.status===401)msg="Token noto'g'ri yoki muddati tugagan.";
@@ -330,6 +341,9 @@ async function gh(path,opt){
     else if(r.status===404&&!opt.allow404)msg="Repo yoki fayl topilmadi. Hisob, repo va branch nomini tekshiring.";
     else if(r.status===409)msg="Repo bo'sh. Avval loyiha fayllarini repoga yuklang.";
     else if(r.status===422)msg="GitHub so'rovni qabul qilmadi (422). Sahifani yangilab, qayta urinib ko'ring.";
+    else if(r.status===413)msg="Fayl GitHub uchun juda katta. MP3 sifatini pasaytiring.";
+    else if(r.status===400)msg="So'rov buzilib yetib bordi (400). Odatda antivirus yoki proksi sababli bo'ladi: ularni vaqtincha o'chirib qayta urinib ko'ring.";
+    else if(r.status>=500)msg="GitHub vaqtincha javob bermayapti ("+r.status+"). Bir necha daqiqadan keyin qayta urinib ko'ring.";
     var err=new Error(msg);err.status=r.status;throw err;
   }
   if(opt.raw)return r;
@@ -347,7 +361,7 @@ async function commitFiles(files,message,onLog){
     if(f.data===null){tree.push({path:f.path,mode:"100644",type:"blob",sha:null});log("o'chiriladi: "+f.path);continue}
     var blob=typeof f.data==="string"?new Blob([f.data],{type:"application/json"}):f.data;
     log("yuklanmoqda ("+(i+1)+"/"+files.length+"): "+f.path+" · "+(blob.size/1048576).toFixed(2)+" MB");
-    var b=await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(blob),encoding:"base64"}});
+    var b=await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(blob),encoding:"base64"},onRetry:function(n){log("  ulanish uzildi, qayta urinish "+n+"/2…")}});
     tree.push({path:f.path,mode:"100644",type:"blob",sha:b.sha});
   }
   var nt=await gh("/git/trees",{method:"POST",body:{base_tree:bc.tree.sha,tree:tree}});
@@ -409,6 +423,19 @@ $("gh-connect").addEventListener("click",function(){
 });
 $("conn-edit").addEventListener("click",function(){$("conn-form").hidden=false;$("conn-ok").hidden=true});
 $("gh-logout").addEventListener("click",function(){CFG.token="";saveCfg();$("gh-token").value="";location.reload()});
+$("nettest").addEventListener("click",async function(){
+  var b=this,res=[];b.disabled=true;b.textContent="Tekshirilmoqda…";
+  function rnd(n){var a=new Uint8Array(n);for(var i=0;i<n;i+=65536)crypto.getRandomValues(a.subarray(i,Math.min(n,i+65536)));return new Blob([a])}
+  try{
+    var t0=performance.now();await gh("");res.push("✓ GitHub'ga ulanish bor ("+Math.round(performance.now()-t0)+" ms)");
+    t0=performance.now();await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(rnd(1024)),encoding:"base64"}});res.push("✓ Kichik fayl yuborildi");
+    t0=performance.now();await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(rnd(4*1048576)),encoding:"base64"}});
+    var sec=(performance.now()-t0)/1000;res.push("✓ 4 MB sinov fayli yuborildi ("+sec.toFixed(1)+" s, ≈"+(32/sec).toFixed(1)+" Mbit/s)");
+    res.push("Hammasi joyida: bu kompyuterdan yuklash mumkin.");
+  }catch(e){res.push("✗ "+e.message+(e.cause?" ["+e.cause.name+": "+e.cause.message+"]":""));}
+  b.disabled=false;b.textContent="Ulanishni tekshirish";
+  openModal('<h2 id="m-title">Ulanish tekshiruvi</h2><pre class="log" style="white-space:pre-wrap">'+esc(res.join("\n"))+'</pre><div style="display:flex;justify-content:flex-end"><button class="btn primary" type="button" data-close>Yopish</button></div>');
+});
 $("reload").addEventListener("click",async function(){try{await loadPlaylist();toast("Ro'yxat yangilandi.")}catch(e){toast(e.message,5000)}});
 if(CFG.owner&&CFG.repo&&CFG.token)connect();
 
@@ -464,7 +491,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("scrim")
 
 /* ================= audio analysis ================= */
 var ctx=null,master=null;
-function ensureCtx(){if(!ctx){var AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();master=ctx.createGain();master.connect(ctx.destination)}if(ctx.state==="suspended")ctx.resume();return ctx}
+function ensureCtx(){if(!ctx){var AC=window.AudioContext||window.webkitAudioContext;try{ctx=new AC({sampleRate:44100})}catch(e){ctx=new AC()}master=ctx.createGain();master.connect(ctx.destination)}if(ctx.state==="suspended")ctx.resume();return ctx}
 var PCS=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 function fft(re,im){
   var n=re.length,i,j=0,k,m;
@@ -587,7 +614,21 @@ $("add-new").addEventListener("click",function(){openEditor(null,false)});
 var drop=$("drop");
 ["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over")})});
 ["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over")})});
-drop.addEventListener("drop",function(e){var f=e.dataTransfer&&e.dataTransfer.files[0];if(f)handleFile(f,false)});
+function isAudioFile(f){return /^audio\//.test(f.type)||/\.(wav|flac|mp3|m4a|aac|ogg|opus|aiff?)$/i.test(f.name)}
+function isSlideFile(f){return /^image\//.test(f.type)||/^video\/(mp4|webm)$/.test(f.type)||/\.(jpe?g|png|gif|webp|hei[cf]|mp4|webm)$/i.test(f.name)}
+function takeDropped(list){
+  var fs=[].slice.call(list||[]),au=fs.filter(isAudioFile)[0],sl=fs.filter(function(f){return !isAudioFile(f)&&isSlideFile(f)});
+  if(au&&!$("drop").hidden)handleFile(au,false);
+  if(sl.length)addSlides(sl);
+  if(!au&&!sl.length&&fs.length)toast("Bu fayl turi qo'llanmaydi: audio (WAV, MP3, FLAC, M4A), rasm yoki MP4 video tashlang.",5000);
+}
+drop.addEventListener("drop",function(e){takeDropped(e.dataTransfer&&e.dataTransfer.files)});
+/* Windows: fayllarni muharrirning istalgan joyiga sudrab tashlash mumkin (audio + muqova rasm birga) */
+document.addEventListener("dragover",function(e){if(E&&e.dataTransfer&&[].indexOf.call(e.dataTransfer.types||[],"Files")>=0){e.preventDefault();document.body.classList.add("dragging")}});
+document.addEventListener("dragleave",function(e){if(!e.relatedTarget)document.body.classList.remove("dragging")});
+document.addEventListener("drop",function(e){document.body.classList.remove("dragging");if(!E||e.defaultPrevented)return;if(e.dataTransfer&&e.dataTransfer.files.length){e.preventDefault();takeDropped(e.dataTransfer.files)}});
+/* Ctrl+S (Mac: Cmd+S) — muharrirda saqlash */
+document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&!e.altKey&&(e.key==="s"||e.key==="S"||e.key==="ы"||e.key==="Ы")){if(!E)return;e.preventDefault();var b=$("ed-save");if(!b.disabled)b.click();else toast($("ed-hint").textContent||"Hali saqlab bo'lmaydi.")}});
 drop.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();$("file").click()}});
 $("file").addEventListener("change",function(){if(this.files[0])handleFile(this.files[0],false)});
 $("load-existing").addEventListener("click",async function(){
@@ -608,7 +649,7 @@ async function handleFile(file,fromExisting){
   try{
     var ab=await file.arrayBuffer();var wav=parseWav(ab.slice(0,Math.min(ab.byteLength,8192)));
     ensureCtx();prog(0.15,"Audio ochilmoqda…");
-    var buf=await ctx.decodeAudioData(ab.slice(0));
+    var buf=await new Promise(function(res,rej){var pr=ctx.decodeAudioData(ab,res,rej);if(pr&&pr.then)pr.then(res,rej)});ab=null;
     prog(0.3,"Sifat tekshirilmoqda…");await nextFrame();
     var peak=0,sum=0,n=0,clips=0;
     for(var c=0;c<buf.numberOfChannels;c++){var d=buf.getChannelData(c);for(var i=0;i<d.length;i++){var a=d[i]<0?-d[i]:d[i];if(a>peak)peak=a;sum+=d[i]*d[i];if(a>=0.9995)clips++}n+=d.length}
@@ -632,7 +673,8 @@ async function handleFile(file,fromExisting){
     prog(1,"Tahlil tugadi");setTimeout(function(){$("anal").hidden=true},800);
     $("nobuf").hidden=true;renderIntroBox();renderQuality();renderReport();updateSave();
   }catch(err){
-    E.buffer=null;$("anal").hidden=true;$("report").innerHTML='<ul class="findings"><li class="bad"><b>XATO</b><span>Bu faylni brauzer o\'qiy olmadi. WAV yoki MP3 formatida qayta saqlab ko\'ring.</span></li></ul>';updateSave();
+    E.buffer=null;$("anal").hidden=true;var why=err&&err.name==="RangeError"||/memory|allocat/i.test(String(err&&err.message))?"Kompyuter xotirasi yetmadi. Boshqa oyna va dasturlarni yopib, qayta urinib ko\'ring yoki faylni 44.1 kHz / 16-bit WAV yoki MP3 qilib eksport qiling.":/\.aiff?$/i.test(file.name)?"AIFF formatini brauzer o\'qimaydi. Faylni WAV yoki MP3 qilib eksport qiling.":"Bu faylni brauzer o\'qiy olmadi. WAV yoki MP3 formatida qayta saqlab ko\'ring.";
+    $("report").innerHTML='<ul class="findings"><li class="bad"><b>XATO</b><span>'+why+' <span class="note">(Texnik sabab: '+esc((err&&(err.name+": "+err.message))||"noma\'lum")+')</span></span></li></ul>';updateSave();
   }
 }
 function renderReport(){
@@ -758,8 +800,9 @@ function toJpeg(f){
     im.src=u;
   });
 }
-$("mfile").addEventListener("change",async function(){
-  var files=[].slice.call(this.files||[]),skip=0,big=0,bad=0;this.value="";
+$("mfile").addEventListener("change",function(){var fs=[].slice.call(this.files||[]);this.value="";addSlides(fs)});
+async function addSlides(files){
+  var skip=0,big=0,bad=0;
   for(var i=0;i<files.length;i++){
     var f=files[i];
     if(E.slides.length>=MAXM){skip++;continue}
@@ -777,7 +820,7 @@ $("mfile").addEventListener("change",async function(){
   if(bad)toast("Rasm ochilmadi (format qo'llanmaydi). JPG yoki PNG qilib qayta tanlang.",6000);
   else if(big)toast("25 MB dan katta fayl qo'shilmadi. Siqib qayta yuklang.");
   else if(skip)toast("Ko'pi bilan 4 ta slayd: rasm, GIF, MP4 yoki WebM.");
-});
+}
 $("mgrid").addEventListener("click",function(e){
   var all=E.slides,d=e.target.closest("[data-md]"),mv=e.target.closest("[data-mm]");
   if(d){var x=all.splice(+d.getAttribute("data-md"),1)[0];if(x&&x.k==="new")URL.revokeObjectURL(x.url)}

@@ -182,6 +182,9 @@ footer{margin-top:18px;text-align:center}
 .cbox{display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:13.5px;color:var(--muted)}
 .cbox b{color:var(--fg)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--mp) + 22px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;max-width:calc(100% - 32px);text-align:center}
+/* Smart TV va katta ekranlar: pult bilan boshqarish uchun yirikroq va aniq fokus */
+@media (min-width:1500px){body{zoom:1.35}}
+.row:focus-visible,.chip:focus-visible,.btn:focus-visible,.iconbtn:focus-visible,.tabs button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
 @media (max-width:380px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.ctrls{gap:6px}}
 </style>
 </head>
@@ -236,7 +239,7 @@ footer{margin-top:18px;text-align:center}
 <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sh-title">
   <div class="wrap">
     <div class="grab" aria-hidden="true"></div>
-    <div class="shbar"><button class="iconbtn" type="button" id="sh-close" aria-label="Yopish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><span class="tag acc" id="sh-mode"></span><button class="iconbtn" type="button" id="sh-share" aria-label="Qo'shiqni ulashish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg></button></div>
+    <div class="shbar"><button class="iconbtn" type="button" id="sh-close" aria-label="Yopish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><span class="tag acc" id="sh-mode"></span><span style="display:flex;gap:8px"><button class="iconbtn" type="button" id="sh-cast" hidden aria-label="Televizor yoki kolonkaga uzatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-6"/><path d="M3 12a7 7 0 0 1 7 7M3 16a3 3 0 0 1 3 3"/><circle cx="3.5" cy="19" r=".6" fill="currentColor"/></svg></button><button class="iconbtn" type="button" id="sh-share" aria-label="Qo'shiqni ulashish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg></button></span></div>
     <div id="sh-car"></div>
     <div class="ttl"><h2 id="sh-title"></h2><p id="sh-sub"></p></div>
     <div class="wv" id="sh-wave" role="slider" tabindex="0" aria-label="Qo'shiq bo'ylab o'tish" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
@@ -257,7 +260,7 @@ footer{margin-top:18px;text-align:center}
 </div>
 
 <div class="toast" id="toast" hidden role="status"></div>
-<audio id="au" preload="metadata" controlslist="nodownload"></audio>
+<audio id="au" preload="metadata" controlslist="nodownload" x-webkit-airplay="allow"></audio>
 
 <script>
 (function(){
@@ -301,6 +304,7 @@ async function load(){
   var nf=TRACKS.filter(function(t){return !t.introOnly}).length,ni=TRACKS.filter(function(t){return t.intro||t.introOnly}).length;
   $("count").textContent=nf+" ta qo'shiq · "+ni+" ta intro";
   $("tab-full").textContent="Playlist ("+nf+")";$("tab-intro").textContent="INTROSONGS ("+ni+")";
+  if(nf===0&&ni>0&&TAB==="full"){TAB="intro";$("tab-full").setAttribute("aria-selected","false");$("tab-intro").setAttribute("aria-selected","true")}
   renderFeatured();renderChips();renderList();deepLink();
 }
 function inTab(t){return TAB==="full"?!t.introOnly:!!(t.intro||t.introOnly)}
@@ -337,7 +341,7 @@ function carHTML(t){
     (n>1?'<span class="car-n">1/'+n+'</span><div class="car-dots" aria-hidden="true">'+sl.map(function(_,i){return '<i class="'+(i?"":"on")+'"></i>'}).join("")+'</div><button type="button" class="car-nav prev" data-cnav="-1" aria-label="Oldingi slayd">'+chev("M15 18l-6-6 6-6")+'</button><button type="button" class="car-nav next" data-cnav="1" aria-label="Keyingi slayd">'+chev("M9 18l6-6-6-6")+'</button>':'')+'</div>';
 }
 function renderFeatured(){
-  var pool=TRACKS.filter(function(t){return !t.introOnly&&t.status!=="sold"});
+  var pool=TRACKS.filter(function(t){return !t.introOnly&&t.status!=="sold"});if(!pool.length)pool=TRACKS.filter(function(t){return t.status!=="sold"});
   var t=pool.filter(function(x){return x.featured})[0]||pool.filter(function(x){return x.media&&x.media.length})[0]||pool[0];
   if(!t){$("feat").innerHTML="";return}
   $("feat").innerHTML=carHTML(t)+'<div class="info"><button class="iconbtn on" type="button" data-play="'+t.id+'" data-mode="'+(t.intro?"intro":"full")+'" aria-label="Tinglash"></button><div><div class="eyebrow">Tavsiya</div><h1>'+esc(t.title)+'</h1><div class="meta">'+esc(t.genre||"")+' · '+esc(t.voice||"")+(t.intro?' · intro '+fmt(t.intro.duration):'')+'</div></div><button class="btn sm primary" type="button" data-info="'+t.id+'">Batafsil</button></div>';
@@ -420,7 +424,7 @@ try{if("mediaSession" in navigator){
 }}catch(e){}
 
 document.addEventListener("click",function(e){
-  var p=e.target.closest("[data-play]");if(p){e.stopPropagation();var t=byId(p.getAttribute("data-play"));if(t)play(t,p.getAttribute("data-mode"),TRACKS.filter(function(x){return !x.introOnly}).map(function(x){return x.id}));return}
+  var p=e.target.closest("[data-play]");if(p){e.stopPropagation();var t=byId(p.getAttribute("data-play"));if(t){var qq=TRACKS.filter(function(x){return p.getAttribute("data-mode")==="intro"?(x.intro||x.introOnly):!x.introOnly}).map(function(x){return x.id});play(t,p.getAttribute("data-mode"),qq.length?qq:TRACKS.map(function(x){return x.id}))}return}
   var r=e.target.closest("[data-row]");if(r){var t2=byId(r.getAttribute("data-row"));if(t2){var m=modeFor(t2);if(cur.t&&cur.t.id===t2.id&&cur.mode===m)openSheet();else play(t2,m)}return}
   var inf=e.target.closest("[data-info]");if(inf){var t3=byId(inf.getAttribute("data-info"));if(t3){if(!cur.t||cur.t.id!==t3.id)play(t3,t3.intro?"intro":"full");openSheet()}return}
   var n=e.target.closest("[data-cnav]");if(n){var tr=n.parentNode.querySelector(".car-tr"),k=Math.round(tr.scrollLeft/tr.clientWidth)+(+n.getAttribute("data-cnav")),c=tr.children.length;tr.scrollTo({left:((k+c)%c)*tr.clientWidth,behavior:"smooth"})}
@@ -515,6 +519,38 @@ function deepLink(){
   var t=id&&byId(id);if(!t)return;
   cur.t=t;cur.mode=t.intro?"intro":"full";cur.queue=TRACKS.map(function(x){return x.id});au.src=srcOf(t,cur.mode);updateUI();openSheet();
 }
+/* ---------- TV / kolonkaga uzatish (Chromecast, Android TV, AirPlay) ---------- */
+(function(){
+  var cb=$("sh-cast");
+  try{
+    if(au.remote&&au.remote.watchAvailability){
+      au.remote.watchAvailability(function(a){cb.hidden=!a}).catch(function(){cb.hidden=false});
+      au.remote.addEventListener("connect",function(){cb.classList.add("on");toast("Televizorga ulandi.")});
+      au.remote.addEventListener("disconnect",function(){cb.classList.remove("on")});
+    }else if(window.WebKitPlaybackTargetAvailabilityEvent){
+      au.addEventListener("webkitplaybacktargetavailabilitychanged",function(e){cb.hidden=e.availability!=="available"});
+    }
+  }catch(e){}
+  cb.addEventListener("click",function(){
+    try{
+      if(au.remote&&au.remote.prompt){au.remote.prompt().catch(function(e){if(e&&e.name!=="AbortError")toast("Yaqin atrofda televizor yoki kolonka topilmadi. Ular telefon bilan bitta Wi-Fi tarmog'ida bo'lishi kerak.",6000)});return}
+      if(au.webkitShowPlaybackTargetPicker){au.webkitShowPlaybackTargetPicker();return}
+    }catch(e){}
+    toast("Bu brauzer uzatishni qo'llamaydi. Chrome yoki Safari'da oching.",5000);
+  });
+})();
+/* TV pulti: Orqaga, Play/Pauza, Keyingi/Oldingi (Samsung Tizen, LG webOS, Android TV) */
+document.addEventListener("keydown",function(e){
+  var k=e.keyCode,n=e.key;
+  if(k===10009||k===461||n==="GoBack"||n==="BrowserBack"){if(!$("sheet").hidden){e.preventDefault();closeSheet()}return}
+  if(!cur.t)return;
+  if(n==="MediaPlayPause"||k===179||k===10252){e.preventDefault();toggle();return}
+  if(n==="MediaPlay"||k===415){e.preventDefault();if(au.paused)toggle();return}
+  if(n==="MediaPause"||k===19){e.preventDefault();if(!au.paused)toggle();return}
+  if(n==="MediaStop"||k===413){e.preventDefault();au.pause();au.currentTime=0;return}
+  if(n==="MediaTrackNext"||k===176||k===417){e.preventDefault();step(1);return}
+  if(n==="MediaTrackPrevious"||k===177||k===412){e.preventDefault();step(-1);return}
+});
 var tt=0;function toast(m,ms){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true},ms||3000)}
 
 /* ---------- install as app (PWA) ---------- */
