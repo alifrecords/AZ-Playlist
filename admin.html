@@ -6,6 +6,13 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Azimxodjayev Music · Admin</title>
 <meta name="theme-color" content="#121110">
+<link rel="manifest" href="manifest-admin.webmanifest">
+<link rel="apple-touch-icon" href="icons/admin-apple-touch-icon.png">
+<meta name="application-name" content="AZ ADMIN">
+<meta name="apple-mobile-web-app-title" content="AZ ADMIN">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F2B33D'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='800' font-size='26' text-anchor='middle' fill='%2317140D'%3EAZ%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -149,6 +156,7 @@ main{display:flex;flex-direction:column;gap:20px;padding-top:20px}
   <div class="wrap">
     <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
+    <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
   </div>
 </header>
@@ -283,6 +291,23 @@ function fmt(s){s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+":"+Strin
 function keyLabel(k){return k?String(k).replace("#","♯"):"—"}
 function hueOf(id){var s=7;for(var i=0;i<id.length;i++)s=(s*31+id.charCodeAt(i))%360;return s}
 var tt=0;function toast(m,ms){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true},ms||3200)}
+
+/* ----- AZ ADMIN ilovasi sifatida o'rnatish (PWA) ----- */
+(function(){
+  var b=$("install"),dp=null,sa=false;
+  try{sa=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){}
+  var ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(function(){});
+  if(sa)return;
+  window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;b.hidden=false});
+  if(ios)b.hidden=false;
+  window.addEventListener("appinstalled",function(){b.hidden=true;toast("AZ ADMIN o'rnatildi.")});
+  b.addEventListener("click",function(){
+    if(dp){dp.prompt();dp.userChoice.then(function(){dp=null;b.hidden=true});return}
+    if(ios){toast("Safari'da «Ulashish» belgisini bosing va «Bosh ekranga qo'shish»ni tanlang.",9000);return}
+    toast("Brauzer menyusidan «Ilovani o'rnatish»ni tanlang.",7000);
+  });
+})();
 var nextFrame=function(){return new Promise(function(r){setTimeout(r,0)})};
 var MAX_FILE=25*1048576,INTRO_MAX=150,MINLEN=10,MAXM=4;
 var PLAY_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>',PAUSE_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
@@ -718,17 +743,40 @@ function renderMgrid(){
   }).join("");
 }
 $("madd").addEventListener("click",function(){$("mfile").click()});
-$("mfile").addEventListener("change",function(){
-  var files=[].slice.call(this.files||[]),skip=0,big=0;
-  files.forEach(function(f){
-    if(E.slides.length>=MAXM){skip++;return}
-    var tp=/^image\//.test(f.type)?"image":/^video\/(mp4|webm)$/.test(f.type)?"video":null;if(!tp){skip++;return}
-    if(f.size>MAX_FILE){big++;return}
-    var ext=(f.name.split(".").pop()||"").toLowerCase().replace(/[^a-z0-9]/g,"")||(tp==="video"?"mp4":"jpg");
-    var url=URL.createObjectURL(f);E.slides.push({k:"new",m:{type:tp,file:f,ext:ext},url:url});
+/* Rasmlar (GIF'dan tashqari) yuklashdan oldin JPG ga o'giriladi: iPhone HEIC rasmlari ham hamma telefonda ko'rinadi, hajmi kichrayadi. */
+function toJpeg(f){
+  return new Promise(function(res,rej){
+    var u=URL.createObjectURL(f),im=new Image();
+    im.onload=function(){
+      var w=im.naturalWidth,h=im.naturalHeight,k=Math.min(1,1600/Math.max(w,h));
+      var c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
+      var g=c.getContext("2d");g.fillStyle="#000";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
+      URL.revokeObjectURL(u);
+      c.toBlob(function(b){b?res(new File([b],f.name.replace(/\.[^.]+$/,"")+".jpg",{type:"image/jpeg"})):rej(new Error("jpg"))},"image/jpeg",0.86);
+    };
+    im.onerror=function(){URL.revokeObjectURL(u);rej(new Error("decode"))};
+    im.src=u;
   });
-  this.value="";renderMgrid();
-  if(big)toast("25 MB dan katta fayl qo'shilmadi. Siqib qayta yuklang.");else if(skip)toast("Ko'pi bilan 4 ta slayd: rasm, GIF, MP4 yoki WebM.");
+}
+$("mfile").addEventListener("change",async function(){
+  var files=[].slice.call(this.files||[]),skip=0,big=0,bad=0;this.value="";
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(E.slides.length>=MAXM){skip++;continue}
+    var nm=(f.name||"").toLowerCase(),isHeic=/image\/hei[cf]/.test(f.type)||/\.hei[cf]$/.test(nm);
+    var tp=(/^image\//.test(f.type)||isHeic)?"image":/^video\/(mp4|webm)$/.test(f.type)?"video":null;if(!tp){skip++;continue}
+    if(tp==="image"&&f.type!=="image/gif"){
+      try{f=await toJpeg(f)}catch(e){bad++;continue}
+    }
+    if(f.size>MAX_FILE){big++;continue}
+    var ext=f.type==="image/jpeg"?"jpg":f.type==="image/gif"?"gif":(f.name.split(".").pop()||"").toLowerCase().replace(/[^a-z0-9]/g,"")||(tp==="video"?"mp4":"jpg");
+    var url=URL.createObjectURL(f);E.slides.push({k:"new",m:{type:tp,file:f,ext:ext},url:url});
+    renderMgrid();
+  }
+  renderMgrid();
+  if(bad)toast("Rasm ochilmadi (format qo'llanmaydi). JPG yoki PNG qilib qayta tanlang.",6000);
+  else if(big)toast("25 MB dan katta fayl qo'shilmadi. Siqib qayta yuklang.");
+  else if(skip)toast("Ko'pi bilan 4 ta slayd: rasm, GIF, MP4 yoki WebM.");
 });
 $("mgrid").addEventListener("click",function(e){
   var all=E.slides,d=e.target.closest("[data-md]"),mv=e.target.closest("[data-mm]");
