@@ -183,7 +183,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v5</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v6</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -212,7 +212,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
     <h2>Sozlamalar</h2>
     <div class="grid2">
       <label class="f"><span>Ijrochi / brend nomi</span><input class="field" id="s-artist" placeholder="AZIMXODJAYEV MUSIC"></label>
-      <label class="f"><span>Buyurtma uchun Telegram nik</span><input class="field mono" id="s-contact" placeholder="@nik" autocapitalize="off"></label>
+      <label class="f"><span>Buyurtma uchun Telegram nik yoki guruh havolasi</span><input class="field mono" id="s-contact" placeholder="@nik yoki https://t.me/+..." autocapitalize="off"><span class="note" id="s-contact-hint"></span></label>
       <label class="f"><span>Mini App havolasi (ixtiyoriy)</span><input class="field mono" id="s-bot" placeholder="https://t.me/bot_nomi/app" autocapitalize="off"></label>
       <label class="f"><span>MP3 sifati (standart)</span><select class="field" id="s-kbps"><option value="128">128 kbps</option><option value="160">160 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></label>
     </div>
@@ -470,10 +470,10 @@ async function loadPlaylist(){
   SAVED=pjson();markDirty();fillSettings();renderList();
 }
 function fillSettings(){
-  var s=DATA.settings;$("s-artist").value=s.artist||"";$("s-contact").value=s.contact||"";$("s-bot").value=s.botApp||"";$("s-kbps").value=String(s.kbps||192);
+  var s=DATA.settings;$("s-artist").value=s.artist||"";$("s-contact").value=s.contact||"";setTimeout(checkContact,0);$("s-bot").value=s.botApp||"";$("s-kbps").value=String(s.kbps||192);
 }
 ["s-artist","s-contact","s-bot","s-kbps"].forEach(function(id){$(id).addEventListener("input",function(){
-  var s=DATA.settings;s.artist=$("s-artist").value.trim();var c=$("s-contact").value.trim().replace(/^@?/,"@");s.contact=c==="@"?"":c;s.botApp=$("s-bot").value.trim();s.kbps=+$("s-kbps").value;markDirty();
+  var s=DATA.settings;s.artist=$("s-artist").value.trim();var c=$("s-contact").value.trim();if(/(t|telegram)\.me\//i.test(c))c=c.replace(/^@+/,"");else if(c)c=c.replace(/^@?/,"@");s.contact=c==="@"?"":c;checkContact();s.botApp=$("s-bot").value.trim();s.kbps=+$("s-kbps").value;markDirty();
 })});
 $("dirty-save").addEventListener("click",async function(){
   var b=this;b.disabled=true;
@@ -528,6 +528,15 @@ $("nettest").addEventListener("click",async function(){
   b.disabled=false;b.textContent="Ulanishni tekshirish";
   openModal('<h2 id="m-title">Ulanish tekshiruvi</h2><pre class="log" style="white-space:pre-wrap">'+esc(res.join("\n"))+'</pre><div style="display:flex;justify-content:flex-end"><button class="btn primary" type="button" data-close>Yopish</button></div>');
 });
+function checkContact(){
+  var h=$("s-contact-hint");if(!h)return;var c=String((DATA.settings||{}).contact||"").trim();
+  var m=c.match(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\/(.+?)\/?$/i),ok=false,txt="";
+  if(!c){txt="⚠ Bo'sh: xonandalar «Buyurtma berish»ni bosganda «aloqa sozlanmagan» xabari chiqadi.";}
+  else if(m){var p=m[1].split("?")[0];if(/^(\+|joinchat\/)[\w-]{6,}$/.test(p)){ok=true;txt="✓ Guruh/kanal havolasi: buyurtmachi guruhga o'tadi, qo'shiq ma'lumoti nusxalanadi.";}else if(/^[A-Za-z0-9_]{4,32}$/.test(p)){ok=true;txt="✓ Telegram profil: tayyor xabar bilan ochiladi.";}else txt="⚠ Havola tanilmadi. @nik yoki https://t.me/+... ko'rinishida yozing.";}
+  else if(/^@[A-Za-z0-9_]{4,32}$/.test(c)){ok=true;txt="✓ Telegram profil: tayyor xabar bilan ochiladi.";}
+  else txt="⚠ Nik noto'g'ri: faqat lotin harflari, raqam va _ (4–32 belgi).";
+  h.textContent=txt;h.style.color=ok?"var(--ok, #8FD9A8)":"var(--bad, #FF9B8A)";
+}
 /* ================= statistika ================= */
 var ST_DAYS=30;
 try{var sd=+localStorage.getItem("az_st_days");if([7,30,90,365].indexOf(sd)>=0)ST_DAYS=sd}catch(e){}

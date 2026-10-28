@@ -520,12 +520,26 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet")
 
 /* ---------- order + share ---------- */
 function openTg(url){if(inTg&&/^https:\/\/t\.me\//.test(url))tg.openTelegramLink(url);else window.open(url,"_blank","noopener")}
-function contactNick(){var c=((DATA.settings||{}).contact||"").replace(/^@/,"").trim();return /^[A-Za-z0-9_]{4,32}$/.test(c)?c:""}
+/* Buyurtma manzili: @nik, t.me/nik yoki guruh/kanal taklif havolasi (t.me/+..., t.me/joinchat/...) */
+function contactInfo(){
+  var c=String((DATA.settings||{}).contact||"").trim().replace(/^@+(?=https?:|t\.me|telegram\.me)/i,"");
+  var m=c.match(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\/(.+?)\/?$/i);
+  if(m){
+    var p=m[1].split("?")[0];
+    if(/^(\+|joinchat\/)[\w-]{6,}$/.test(p))return {url:"https://t.me/"+p,text:false};
+    if(/^[A-Za-z0-9_]{4,32}$/.test(p))return {url:"https://t.me/"+p,text:true};
+    return null;
+  }
+  c=c.replace(/^@/,"");
+  return /^[A-Za-z0-9_]{4,32}$/.test(c)?{url:"https://t.me/"+c,text:true}:null;
+}
 $("sh-order").addEventListener("click",function(){
-  var t=cur.t;if(!t)return;var n=contactNick();AN.order(t.id);
-  if(!n){toast("Buyurtma uchun aloqa hali sozlanmagan.");return}
+  var t=cur.t;if(!t)return;var ci=contactInfo();AN.order(t.id);
+  if(!ci){toast("Buyurtma uchun aloqa hali sozlanmagan.");return}
   var msg="Assalomu alaykum! \""+t.title+"\" ("+(t.genre||"")+", "+(t.bpm||"—")+" BPM, "+keyLabel(t.key)+") qo'shig'iga litsenziya olmoqchiman.";
-  hap("medium");openTg("https://t.me/"+n+"?text="+encodeURIComponent(msg));
+  hap("medium");
+  if(ci.text)openTg(ci.url+"?text="+encodeURIComponent(msg));
+  else{try{navigator.clipboard&&navigator.clipboard.writeText(msg)}catch(e){}toast("Guruh ochilmoqda. Qo'shiq ma'lumoti nusxalandi — guruhga joylab yuboring.",6000);openTg(ci.url)}
 });
 function linkFor(id){
   var st=DATA.settings||{},ba=String(st.botApp||"").trim().replace(/^(https?:\/\/)?(www\.)?(t\.me|telegram\.me)\//i,"https://t.me/").replace(/\/+$/,"");
