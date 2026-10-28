@@ -2,7 +2,7 @@
 // D1 bazasi Cloudflare'da "DB" nomi bilan ulanishi kerak (Settings → Bindings).
 // Ixtiyoriy maxfiy o'zgaruvchi: BOT_TOKEN (Settings → Variables and secrets) —
 // Telegram ismlarini tasdiqlash va yangi izoh haqida adminga xabar yuborish uchun.
-export const EVENTS = ["open", "play", "share", "order", "install", "app_open", "tg_install"];
+export const EVENTS = ["open", "play", "share", "order", "install", "app_open", "tg_install", "channel"];
 export const SOURCES = ["telegram", "ilova", "brauzer"];
 export const ID = /^[a-z0-9-]{1,80}$/;
 export const VID = /^[a-z0-9]{8,32}$/;

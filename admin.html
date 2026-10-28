@@ -87,6 +87,7 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .stt td{padding:8px;border-bottom:1px solid var(--line)}
 .stt td.n,.stt th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .tbox{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.chs{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px}
 .bnr{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:18px;border-top:1px solid var(--line);padding-top:16px}
 @media (max-width:560px){.bnr{grid-template-columns:minmax(0,1fr)}}
 .bnr-prev{border:1px dashed var(--line);border-radius:12px;min-height:200px;display:grid;place-items:center;overflow:hidden;background:var(--bg)}
@@ -219,7 +220,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v13</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v14</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -251,6 +252,15 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
       <label class="f"><span>Buyurtma uchun Telegram nik yoki guruh havolasi</span><input class="field mono" id="s-contact" placeholder="@nik yoki https://t.me/+..." autocapitalize="off"><span class="note" id="s-contact-hint"></span></label>
       <label class="f"><span>Mini App havolasi (ixtiyoriy)</span><input class="field mono" id="s-bot" placeholder="https://t.me/bot_nomi/app" autocapitalize="off"></label>
       <label class="f"><span>MP3 sifati (standart)</span><select class="field" id="s-kbps"><option value="128">128 kbps</option><option value="160">160 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></label>
+    </div>
+    <div class="chs">
+      <h3 style="margin:0">📢 Telegram kanal</h3>
+      <div class="grid2">
+        <label class="f"><span>Kanal havolasi</span><input class="field mono" id="ch-url" placeholder="https://t.me/kanal" autocapitalize="off"><span class="note" id="ch-hint"></span></label>
+        <label class="f"><span>Saytdagi taklif matni</span><input class="field" id="ch-text" maxlength="90" placeholder="Yangi qo'shiqlar birinchi bo'lib kanalda!"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="ch-on"><span><b>Saytda «Kanalga qo'shiling» kartasini ko'rsatish</b> — asosiy sahifada va pleerda</span></label>
+      <label class="check"><input type="checkbox" id="ch-post"><span><b>Yangi qo'shiq xabarini kanalga ham joylash</b> — bot kanalda admin bo'lishi va BOT_TOKEN kiritilgan bo'lishi kerak</span></label>
     </div>
       <div class="bnr" id="bnr">
       <div class="bnr-prev" id="bnr-prev"><span class="note">Banner yo'q</span></div>
@@ -373,7 +383,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
         </div>
         <div class="f" id="q-wrap" hidden><label for="e-kbps">Saytga chiqadigan MP3 sifati</label><select class="field" id="e-kbps"></select><span class="note" id="q-est"></span></div>
         <div id="report"></div>
-        <label class="check" id="e-notify-w"><input type="checkbox" id="e-notify"><span><b>📣 Obunachilarga xabar yuborish</b> — sayt yangilangach, telefon va Telegram obunachilariga «Yangi qo'shiq» xabari ketadi. <span class="note" id="e-notify-n"></span></span></label>
+        <label class="check" id="e-notify-w"><input type="checkbox" id="e-notify"><span><b>📣 Obunachilarga xabar yuborish</b> — sayt yangilangach, telefon va Telegram obunachilariga (sozlamada yoqilgan bo'lsa, kanalga ham) «Yangi qo'shiq» xabari ketadi. <span class="note" id="e-notify-n"></span></span></label>
         <label class="check"><input type="checkbox" id="e-own"><span><b>Bu asarning muallifi va huquq egasi menman.</b> Asar mualliflik huquqi bilan himoyalangan holda joylanadi.</span></label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" type="button" id="ed-save" disabled>GitHub'ga joylash</button><span class="note" id="ed-hint"></span></div>
         <pre class="log" id="log" hidden></pre>
@@ -548,7 +558,15 @@ async function loadPlaylist(){
 }
 function fillSettings(){
   var s=DATA.settings;$("s-artist").value=s.artist||"";$("s-contact").value=s.contact||"";setTimeout(checkContact,0);setTimeout(bnrRender,0);$("s-bot").value=s.botApp||"";$("s-kbps").value=String(s.kbps||192);
+  var ch=s.channel||{};$("ch-url").value=ch.url||"";$("ch-text").value=ch.text||"";$("ch-on").checked=!!(ch.url&&ch.on!==false);$("ch-post").checked=!!(ch.url&&ch.post);chHint();
 }
+function chNorm(v){v=String(v||"").trim();var m=v.match(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\/([A-Za-z0-9_]{4,32})\/?$/i)||v.match(/^@([A-Za-z0-9_]{4,32})$/);return m?"https://t.me/"+m[1]:null}
+function chHint(){var v=$("ch-url").value.trim(),h=$("ch-hint");if(!v){h.textContent="";return}var n=chNorm(v);h.textContent=n?"✓ "+n.replace("https://t.me/","@"):"⚠ Ochiq kanal havolasi bo'lsin: https://t.me/nomi yoki @nomi";h.style.color=n?"var(--ok,#8FD9A8)":"var(--bad,#FF9B8A)"}
+["ch-url","ch-text","ch-on","ch-post"].forEach(function(id){$(id).addEventListener(id==="ch-on"||id==="ch-post"?"change":"input",function(){
+  var n=chNorm($("ch-url").value);chHint();
+  if(!n&&!$("ch-url").value.trim()){delete DATA.settings.channel;markDirty();return}
+  DATA.settings.channel={url:n||$("ch-url").value.trim(),text:$("ch-text").value.trim(),on:$("ch-on").checked,post:$("ch-post").checked};markDirty();
+})});
 ["s-artist","s-contact","s-bot","s-kbps"].forEach(function(id){$(id).addEventListener("input",function(){
   var s=DATA.settings;s.artist=$("s-artist").value.trim();var c=$("s-contact").value.trim();if(/(t|telegram)\.me\//i.test(c))c=c.replace(/^@+/,"");else if(c)c=c.replace(/^@?/,"@");s.contact=c==="@"?"":c;checkContact();s.botApp=$("s-bot").value.trim();s.kbps=+$("s-kbps").value;markDirty();
 })});
@@ -704,15 +722,17 @@ async function notifyFlow(n,waitLive){
     }
     var st=await api("api/admin/notify",{method:"POST",body:Object.assign({action:"start"},n)});
     var tot={sent:0,failed:0,removed:0};
-    for(var kind of ["push","tg"]){
+    var ch=(DATA.settings||{}).channel,kinds=["push","tg"];if(n.channelPost!==false&&ch&&ch.post&&chNorm(ch.url))kinds.push("channel");
+    for(var kind of kinds){
       var after=0,guardN=0;
       while(guardN++<500){
-        say("Yuborilmoqda: "+(kind==="push"?"telefonlarga":"Telegram'ga")+" · "+tot.sent+" ta yetkazildi");
+        say("Yuborilmoqda: "+(kind==="push"?"telefonlarga":kind==="tg"?"Telegram obunachilariga":"kanalga")+" · "+tot.sent+" ta yetkazildi");
+        if(kind==="channel"){try{var rc=await api("api/admin/notify",{method:"POST",body:{action:"send",kind:"channel",channel:chNorm(ch.url).replace("https://t.me/","@"),botApp:(DATA.settings||{}).botApp||""}});tot.channel=rc.sent?"✓ kanalga joylandi":"✗ kanalga joylanmadi"+(rc.msg?" ("+rc.msg+")":"")}catch(xc){tot.channel="✗ kanalga joylanmadi ("+xc.message+")"}break}
         var r2=await api("api/admin/notify",{method:"POST",body:{action:"send",kind:kind,after:after}});
         tot.sent+=r2.sent;tot.failed+=r2.failed;tot.removed+=r2.removed;after=r2.next;if(r2.done)break;
       }
     }
-    say("<b>Yuborildi:</b> "+tot.sent+" ta obunachiga"+(tot.removed?" · "+tot.removed+" ta eskirgan obuna o'chirildi":"")+(tot.failed?" · "+tot.failed+" ta yetkazilmadi":""));
+    say("<b>Yuborildi:</b> "+tot.sent+" ta obunachiga"+(tot.channel?" · "+esc(tot.channel):"")+(tot.removed?" · "+tot.removed+" ta eskirgan obuna o'chirildi":"")+(tot.failed?" · "+tot.failed+" ta yetkazilmadi":""));
     toast("Xabar "+tot.sent+" ta obunachiga yuborildi.",5000);loadSubs();
   }catch(e){say("Xabar yuborilmadi: "+esc(e.message));toast("Xabar yuborilmadi: "+e.message,6000)}
   NTF.busy=false;
@@ -828,6 +848,7 @@ async function loadStats(){
     ["Tashrif buyuruvchilar",u.visitors,"noyob qurilma"],
     ["Ilovani o'rnatganlar",u.installs,"jami: "+nf(a.installs)+" ta"],
     ["Telegram'dan o'rnatganlar",u.installs_tg,nf(u.tg_clicks)+" kishi «Brauzerda ochish»ni bosdi"],
+    ["Kanalga o'tganlar",u.channel_clicks,"«Kanalga qo'shilish» bosganlar"],
     ["Havola orqali kelganlar",u.via_link,nf(u.installs_ref)+" tasi ilovani o'rnatdi"],
     ["Tinglashlar",c.play,"intro va to'liq"],
     ["Ulashishlar",c.share,"«Do'stga yuborish»"],

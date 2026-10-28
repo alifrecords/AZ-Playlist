@@ -51,6 +51,22 @@ export const onRequestPost = guard(async ({ request, env }) => {
     return json({ done: rows.length < 40, sent, failed, removed, next });
   }
 
+  if (b.kind === "channel") {
+    if (!env.BOT_TOKEN) return json({ done: true, sent: 0, msg: "BOT_TOKEN sozlanmagan" });
+    const chat = /^@[A-Za-z0-9_]{4,32}$/.test(b.channel || "") ? b.channel : null;
+    if (!chat) return json({ done: true, sent: 0, msg: "kanal noto'g'ri" });
+    const api = (env.TG_API || "https://api.telegram.org") + "/bot" + env.BOT_TOKEN + "/";
+    const ba = String(b.botApp || "").trim().replace(/^(https?:\/\/)?(www\.)?(t|telegram)\.me\//i, "https://t.me/").replace(/\/+$/, "");
+    const link = /^https:\/\/t\.me\/[\w\/]+$/.test(ba) && n.track ? ba + "?startapp=" + n.track : origin + n.url;
+    const text = n.title + (n.body ? "\n" + n.body : "") + "\n\n▶ Tinglash: pastdagi tugma";
+    const markup = { inline_keyboard: [[{ text: "▶ Tinglash", url: link }]] };
+    const body = n.image ? { chat_id: chat, photo: n.image, caption: text, reply_markup: markup } : { chat_id: chat, text, reply_markup: markup, disable_web_page_preview: true };
+    const r = await fetch(api + (n.image ? "sendPhoto" : "sendMessage"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    let msg = "";
+    if (!r.ok) { try { const j = await r.json(); msg = /not enough rights|administrator|chat not found|member/i.test(j.description || "") ? "bot kanalda admin emas" : (j.description || "").slice(0, 80); } catch (e) {} }
+    return json({ done: true, sent: r.ok ? 1 : 0, failed: r.ok ? 0 : 1, removed: 0, next: 0, msg });
+  }
+
   if (b.kind === "tg") {
     if (!env.BOT_TOKEN) return json({ done: true, sent, failed, removed, next: after });
     const rows = (await env.DB.prepare("SELECT uid FROM tg_subs WHERE uid > ? ORDER BY uid LIMIT 25").bind(after).all()).results;
