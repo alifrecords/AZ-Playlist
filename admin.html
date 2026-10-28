@@ -176,7 +176,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 .mth img,.mth video{width:100%;height:100%;object-fit:cover;display:block}
 .mth .mi{position:absolute;left:5px;top:5px;font:600 11px var(--mono);background:rgba(0,0,0,.6);color:#fff;border-radius:4px;padding:1px 5px}
 .mth .mops{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:4px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
-.mth .mtrim{position:absolute;right:5px;top:5px;min-width:32px;height:28px;padding:0 8px;border-radius:14px;border:0;background:var(--accent);color:var(--accent-ink);font:700 12px var(--body);cursor:pointer;display:flex;align-items:center;gap:4px}
+.mth .mtrim{position:absolute;right:5px;top:28px;width:32px;height:32px;padding:0;justify-content:center;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font:700 12px var(--body);cursor:pointer;display:flex;align-items:center;gap:4px}
 .mth .mseg{position:absolute;left:5px;bottom:40px;font:600 10.5px var(--mono);background:rgba(0,0,0,.7);color:#fff;border-radius:4px;padding:1px 5px}
 .modal.wide{max-width:780px}
 .trim-v{background:#000;border-radius:12px;overflow:hidden;display:grid;place-items:center;max-height:46vh}
@@ -205,7 +205,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v9</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v10</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -412,7 +412,8 @@ async function gh(path,opt){
   if(!r.ok){
     var msg="GitHub xatosi "+r.status;
     if(r.status===401)msg="Token noto'g'ri yoki muddati tugagan.";
-    else if(r.status===403)msg="Ruxsat yo'q: tokenga shu repo uchun Contents: Read and write huquqini bering.";
+    else if(r.status===403&&r.headers.get("x-ratelimit-remaining")==="0")msg="GitHub so'rovlar chegarasiga yetildi. Bir necha daqiqa kutib, qayta urinib ko'ring.";
+    else if(r.status===403)msg="Ruxsat yo'q: tokenga «"+CFG.repo+"» repo uchun Contents: Read and write huquqini bering (GitHub → Settings → Personal access tokens → Edit).";
     else if(r.status===404&&!opt.allow404)msg="Repo yoki fayl topilmadi. Hisob, repo va branch nomini tekshiring.";
     else if(r.status===409)msg="Repo bo'sh. Avval loyiha fayllarini repoga yuklang.";
     else if(r.status===422)msg="GitHub so'rovni qabul qilmadi (422). Sahifani yangilab, qayta urinib ko'ring.";
@@ -525,6 +526,9 @@ async function connect(){
   msg.textContent=stage;
   try{
     var info=await gh("",{timeout:12000,tries:2,onRetry:function(){stage="Javob kelmadi, qayta urinilmoqda…";msg.textContent=stage}});
+    stage="Yozish huquqi tekshirilmoqda…";msg.textContent=stage;
+    try{await gh("/git/blobs",{method:"POST",body:{content:"YXo=",encoding:"base64"},timeout:15000,tries:2})}
+    catch(we){if(we.status===403||we.status===404)throw new Error("Token bilan kirish bor, lekin YOZISH huquqi yo'q. GitHub → Settings → Personal access tokens → shu token → Edit: Repository access'da «"+CFG.repo+"» tanlangan va Contents: «Read and write» bo'lsin → Update. Keyin «Ulanish»ni qayta bosing.");if(we.status!==0)throw we}
     stage="Playlist o'qilmoqda…";msg.textContent=stage;
     if(info.permissions&&!info.permissions.push)throw new Error("Bu token bilan repoga yozib bo'lmaydi.");
     /* Repo nomi yoki egasi o'zgargan bo'lsa (masalan az-playlist → AZ-Playlist), yangi nomga o'tamiz:
@@ -1045,7 +1049,7 @@ function renderMgrid(){
   $("media-count").textContent=all.length+" / "+MAXM;$("madd").disabled=all.length>=MAXM;
   $("mgrid").innerHTML=all.map(function(x,i){
     var sg=x.m.type==="video"&&(x.m.start>0||x.m.end)?'<span class="mseg">'+fmt1(x.m.start||0)+'–'+(x.m.end?fmt1(x.m.end):"oxiri")+'</span>':"";
-    var inner=x.m.type==="video"?'<video src="'+esc(x.url)+'" muted playsinline loop autoplay preload="metadata"'+(x.m.start>0||x.m.end?' data-s="'+(x.m.start||0)+'" data-e="'+(x.m.end||0)+'"':'')+'></video><button type="button" class="mtrim" data-mt="'+i+'" aria-label="'+(i+1)+'-videoni kesish">✂ Kesish</button>'+sg:'<img src="'+esc(x.url)+'" alt="'+(i+1)+'-slayd" onerror="this.style.opacity=0">';
+    var inner=x.m.type==="video"?'<video src="'+esc(x.url)+'" muted playsinline loop autoplay preload="metadata"'+(x.m.start>0||x.m.end?' data-s="'+(x.m.start||0)+'" data-e="'+(x.m.end||0)+'"':'')+'></video><button type="button" class="mtrim" data-mt="'+i+'" aria-label="'+(i+1)+'-videoni kesish" title="Videoni kesish">✂</button>'+sg:'<img src="'+esc(x.url)+'" alt="'+(i+1)+'-slayd" onerror="this.style.opacity=0">';
     return '<div class="mth">'+inner+'<span class="mi">'+(i+1)+(i===0?" · muqova":"")+'</span><div class="mops"><button type="button" data-mm="'+i+',-1" aria-label="'+(i+1)+'-slaydni chapga">‹</button><button type="button" data-md="'+i+'" aria-label="'+(i+1)+'-slaydni olib tashlash">×</button><button type="button" data-mm="'+i+',1" aria-label="'+(i+1)+'-slaydni o\'ngga">›</button></div></div>';
   }).join("");
 }
