@@ -25,7 +25,7 @@ export async function onRequestPost({ request, env }) {
     const track = ID.test(x.t || "") ? x.t : null;
     const ref = ID.test(x.ref || "") ? x.ref : null;
     const src = SOURCES.includes(x.src) ? x.src : "brauzer";
-    const m = x.m === "intro" || x.m === "full" || x.m === "tg" ? x.m : null;
+    const m = ["intro", "full", "tg", "telegram", "instagram", "youtube"].includes(x.m) ? x.m : null;
     rows.push([now, day, x.e, track, x.vid, src, ref, cc, m]);
   }
   if (!rows.length) return new Response(null, { status: 204 });

@@ -220,7 +220,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v14</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v15</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -254,12 +254,15 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
       <label class="f"><span>MP3 sifati (standart)</span><select class="field" id="s-kbps"><option value="128">128 kbps</option><option value="160">160 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></label>
     </div>
     <div class="chs">
-      <h3 style="margin:0">📢 Telegram kanal</h3>
-      <div class="grid2">
-        <label class="f"><span>Kanal havolasi</span><input class="field mono" id="ch-url" placeholder="https://t.me/kanal" autocapitalize="off"><span class="note" id="ch-hint"></span></label>
-        <label class="f"><span>Saytdagi taklif matni</span><input class="field" id="ch-text" maxlength="90" placeholder="Yangi qo'shiqlar birinchi bo'lib kanalda!"></label>
+      <h3 style="margin:0">📢 Ijtimoiy tarmoqlar</h3>
+      <p class="note" style="margin:0">Saytda uchta rangli tugma bo'lib chiqadi (asosiy sahifada va pleerda). Bo'sh qoldirilgan tarmoq ko'rinmaydi.</p>
+      <div class="grid3">
+        <label class="f"><span>Telegram kanal</span><input class="field mono" id="ch-url" placeholder="https://t.me/kanal" autocapitalize="off"><span class="note" id="ch-hint"></span></label>
+        <label class="f"><span>Instagram</span><input class="field mono" id="so-ig" placeholder="@profil yoki havola" autocapitalize="off"><span class="note" id="so-ig-h"></span></label>
+        <label class="f"><span>YouTube</span><input class="field mono" id="so-yt" placeholder="@kanal yoki havola" autocapitalize="off"><span class="note" id="so-yt-h"></span></label>
       </div>
-      <label class="check"><input type="checkbox" id="ch-on"><span><b>Saytda «Kanalga qo'shiling» kartasini ko'rsatish</b> — asosiy sahifada va pleerda</span></label>
+      <input type="hidden" id="ch-text">
+      <label class="check"><input type="checkbox" id="ch-on"><span><b>Telegram tugmasini saytda ko'rsatish</b></span></label>
       <label class="check"><input type="checkbox" id="ch-post"><span><b>Yangi qo'shiq xabarini kanalga ham joylash</b> — bot kanalda admin bo'lishi va BOT_TOKEN kiritilgan bo'lishi kerak</span></label>
     </div>
       <div class="bnr" id="bnr">
@@ -559,9 +562,16 @@ async function loadPlaylist(){
 function fillSettings(){
   var s=DATA.settings;$("s-artist").value=s.artist||"";$("s-contact").value=s.contact||"";setTimeout(checkContact,0);setTimeout(bnrRender,0);$("s-bot").value=s.botApp||"";$("s-kbps").value=String(s.kbps||192);
   var ch=s.channel||{};$("ch-url").value=ch.url||"";$("ch-text").value=ch.text||"";$("ch-on").checked=!!(ch.url&&ch.on!==false);$("ch-post").checked=!!(ch.url&&ch.post);chHint();
+  var so=s.social||{};$("so-ig").value=so.instagram||"";$("so-yt").value=so.youtube||"";soHint();
 }
 function chNorm(v){v=String(v||"").trim();var m=v.match(/^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\/([A-Za-z0-9_]{4,32})\/?$/i)||v.match(/^@([A-Za-z0-9_]{4,32})$/);return m?"https://t.me/"+m[1]:null}
 function chHint(){var v=$("ch-url").value.trim(),h=$("ch-hint");if(!v){h.textContent="";return}var n=chNorm(v);h.textContent=n?"✓ "+n.replace("https://t.me/","@"):"⚠ Ochiq kanal havolasi bo'lsin: https://t.me/nomi yoki @nomi";h.style.color=n?"var(--ok,#8FD9A8)":"var(--bad,#FF9B8A)"}
+function igNorm(v){v=String(v||"").trim();var m=v.match(/^@?([A-Za-z0-9_.]{1,30})$/)||v.match(/^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([A-Za-z0-9_.]{1,30})\/?(?:\?.*)?$/i);return m?"@"+m[1]:null}
+function ytNorm(v){v=String(v||"").trim();if(/^@[A-Za-z0-9_.\-]{3,40}$/.test(v))return v;var m=v.match(/^(?:https?:\/\/)?(?:www\.|m\.)?youtube\.com\/(@[\w.\-]{3,40})\/?(?:\?.*)?$/i);if(m)return m[1];return /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:channel\/[\w\-]{10,40}|c\/[\w.\-]{2,60}|user\/[\w.\-]{2,60})|youtu\.be\/[\w\-]{6,20})\/?(?:\?.*)?$/i.test(v)?v.replace(/^(?!https?:\/\/)/,"https://"):null}
+function soHint(){[["so-ig","so-ig-h",igNorm],["so-yt","so-yt-h",ytNorm]].forEach(function(x){var v=$(x[0]).value.trim(),h=$(x[1]);if(!v){h.textContent="";return}var n=x[2](v);h.textContent=n?"✓ "+n:"⚠ Havola tanilmadi";h.style.color=n?"var(--ok,#8FD9A8)":"var(--bad,#FF9B8A)"})}
+["so-ig","so-yt"].forEach(function(id){$(id).addEventListener("input",function(){soHint();var ig=igNorm($("so-ig").value),yt=ytNorm($("so-yt").value);
+  var so={};if(ig)so.instagram=ig;else if($("so-ig").value.trim())so.instagram=$("so-ig").value.trim();if(yt)so.youtube=yt;else if($("so-yt").value.trim())so.youtube=$("so-yt").value.trim();
+  if(Object.keys(so).length)DATA.settings.social=so;else delete DATA.settings.social;markDirty()})});
 ["ch-url","ch-text","ch-on","ch-post"].forEach(function(id){$(id).addEventListener(id==="ch-on"||id==="ch-post"?"change":"input",function(){
   var n=chNorm($("ch-url").value);chHint();
   if(!n&&!$("ch-url").value.trim()){delete DATA.settings.channel;markDirty();return}
@@ -848,7 +858,7 @@ async function loadStats(){
     ["Tashrif buyuruvchilar",u.visitors,"noyob qurilma"],
     ["Ilovani o'rnatganlar",u.installs,"jami: "+nf(a.installs)+" ta"],
     ["Telegram'dan o'rnatganlar",u.installs_tg,nf(u.tg_clicks)+" kishi «Brauzerda ochish»ni bosdi"],
-    ["Kanalga o'tganlar",u.channel_clicks,"«Kanalga qo'shilish» bosganlar"],
+    ["Ijtimoiy tarmoqlarga o'tganlar",(+u.channel_clicks||0)+(+u.ig_clicks||0)+(+u.yt_clicks||0),"Telegram "+nf(u.channel_clicks)+" · Instagram "+nf(u.ig_clicks)+" · YouTube "+nf(u.yt_clicks)],
     ["Havola orqali kelganlar",u.via_link,nf(u.installs_ref)+" tasi ilovani o'rnatdi"],
     ["Tinglashlar",c.play,"intro va to'liq"],
     ["Ulashishlar",c.share,"«Do'stga yuborish»"],
