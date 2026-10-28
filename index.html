@@ -283,6 +283,36 @@ function safePath(p){return /^(music|media)\/[\w.\-]+$/.test(p||"")?p:""}
 var DATA={settings:{},tracks:[]},TRACKS=[],TAB="full",GENRE="Hammasi",Q="";
 var cur={t:null,mode:"full",queue:[]};
 
+/* ---------- anonim statistika (admin → Statistika) ----------
+   Faqat tasodifiy qurilma raqami va hodisa yuboriladi: ism, telefon, IP saqlanmaydi. */
+var AN=(function(){
+  function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+  var vid=ls("az_vid");if(!/^[a-z0-9]{8,32}$/.test(vid||"")){vid=(Math.random().toString(36).slice(2)+Date.now().toString(36)).replace(/[^a-z0-9]/g,"").slice(0,24);ls("az_vid",vid)}
+  var sa=false;try{sa=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){}
+  var src=inTg?"telegram":sa?"ilova":"brauzer";
+  var ref=null;
+  try{if(inTg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)ref=tg.initDataUnsafe.start_param}catch(e){}
+  var h=(location.hash||"").replace("#","");if(!ref&&h.indexOf("t-")===0)ref=h.slice(2);
+  if(!ref){try{ref=new URLSearchParams(location.search).get("ref")}catch(e){}}
+  if(ref&&!/^[a-z0-9-]{1,80}$/.test(ref))ref=null;
+  if(ref&&!ls("az_ref"))ls("az_ref",ref);
+  var firstRef=ls("az_ref")||null;
+  function send(e,extra){
+    var b=Object.assign({e:e,vid:vid,src:src},extra||{});
+    var body=JSON.stringify(b);
+    try{if(navigator.sendBeacon&&navigator.sendBeacon("api/track",new Blob([body],{type:"text/plain"})))return}catch(x){}
+    try{fetch("api/track",{method:"POST",body:body,keepalive:true,headers:{"Content-Type":"text/plain"}}).catch(function(){})}catch(x){}
+  }
+  return {
+    open:function(){try{if(sessionStorage.getItem("az_open"))return;sessionStorage.setItem("az_open","1")}catch(e){}send("open",{ref:ref||undefined})},
+    play:function(t,m){send("play",{t:t,m:m,ref:firstRef||undefined})},
+    share:function(t){send("share",{t:t||undefined})},
+    order:function(t){send("order",{t:t,ref:firstRef||undefined})},
+    install:function(){if(ls("az_inst"))return;ls("az_inst","1");send("install",{ref:firstRef||undefined,t:firstRef||undefined})},
+    appOpen:function(){if(!sa)return;send("app_open");if(!ls("az_inst"))this.install()}
+  };
+})();
+
 /* copyright strip */
 try{if(localStorage.getItem("az_c_ok")!=="1")$("cstrip").hidden=false}catch(e){$("cstrip").hidden=false}
 $("cstrip-ok").addEventListener("click",function(){$("cstrip").hidden=true;try{localStorage.setItem("az_c_ok","1")}catch(e){}});
@@ -385,7 +415,8 @@ function step(d){
   var n=q[(i+d+q.length)%q.length],t=byId(n);if(t){cur.t=null;play(t,cur.mode==="intro"&&t.intro||t.introOnly?"intro":"full",q)}
 }
 au.addEventListener("ended",function(){step(1)});
-au.addEventListener("play",updateUI);au.addEventListener("pause",updateUI);
+au.addEventListener("play",updateUI);
+var lastPlayKey="";au.addEventListener("playing",function(){if(!cur.t)return;var k=cur.t.id+":"+cur.mode;if(k!==lastPlayKey){lastPlayKey=k;AN.play(cur.t.id,cur.mode)}});au.addEventListener("pause",updateUI);
 au.addEventListener("error",function(){if(cur.t)toast("Audio yuklanmadi. Internetni tekshiring.")});
 au.addEventListener("timeupdate",paintProgress);au.addEventListener("loadedmetadata",paintProgress);
 au.addEventListener("contextmenu",function(e){e.preventDefault()});
@@ -491,7 +522,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet")
 function openTg(url){if(inTg&&/^https:\/\/t\.me\//.test(url))tg.openTelegramLink(url);else window.open(url,"_blank","noopener")}
 function contactNick(){var c=((DATA.settings||{}).contact||"").replace(/^@/,"").trim();return /^[A-Za-z0-9_]{4,32}$/.test(c)?c:""}
 $("sh-order").addEventListener("click",function(){
-  var t=cur.t;if(!t)return;var n=contactNick();
+  var t=cur.t;if(!t)return;var n=contactNick();AN.order(t.id);
   if(!n){toast("Buyurtma uchun aloqa hali sozlanmagan.");return}
   var msg="Assalomu alaykum! \""+t.title+"\" ("+(t.genre||"")+", "+(t.bpm||"—")+" BPM, "+keyLabel(t.key)+") qo'shig'iga litsenziya olmoqchiman.";
   hap("medium");openTg("https://t.me/"+n+"?text="+encodeURIComponent(msg));
@@ -499,9 +530,10 @@ $("sh-order").addEventListener("click",function(){
 function linkFor(id){
   var st=DATA.settings||{},ba=String(st.botApp||"").trim().replace(/^(https?:\/\/)?(www\.)?(t\.me|telegram\.me)\//i,"https://t.me/").replace(/\/+$/,"");
   if(/^https:\/\/t\.me\/[\w\/]+$/.test(ba))return ba+(id?"?startapp="+encodeURIComponent(id):"");
-  return location.origin+location.pathname+(id?"#t-"+id:"");
+  return location.origin+location.pathname+(id?"?ref="+encodeURIComponent(id)+"#t-"+id:"");
 }
 function share(id,title){
+  AN.share(id);
   var url=linkFor(id),text=title?"\""+title+"\" — "+((DATA.settings||{}).artist||"AZIMXODJAYEV"):"Azimxodjayev Music playlisti";
   var tgShare="https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text);
   if(inTg){tg.openTelegramLink(tgShare);return}
@@ -562,13 +594,14 @@ if(!inTg&&!standalone){
   window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredPrompt=e;$("install").hidden=false});
   if(isIOS)$("install").hidden=false;
 }
-window.addEventListener("appinstalled",function(){$("install").hidden=true;deferredPrompt=null;toast("AZ MUSIC telefoningizga o'rnatildi.")});
+window.addEventListener("appinstalled",function(){AN.install();$("install").hidden=true;deferredPrompt=null;toast("AZ MUSIC telefoningizga o'rnatildi.")});
 $("install").addEventListener("click",function(){
   if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;$("install").hidden=true});return}
   if(isIOS){toast("Safari'da pastdagi «Ulashish» belgisini bosing va «Bosh ekranga qo'shish»ni tanlang.",9000);return}
   toast("Brauzer menyusidan «Ilovani o'rnatish» yoki «Bosh ekranga qo'shish»ni tanlang.",7000);
 });
 
+AN.open();AN.appOpen();
 load();
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&!cur.t){load()}});
 })();

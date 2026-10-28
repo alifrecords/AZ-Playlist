@@ -63,6 +63,34 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 @media (max-width:640px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
 .card{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
 .card h2{font-size:22px}
+/* statistika */
+.seg{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.seg button{min-height:36px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--bg);display:flex;flex-direction:column;gap:4px}
+.kpi span{font-size:12px;color:var(--muted);font-weight:700}
+.kpi b{font:800 30px/1 var(--display)}
+.kpi i{font-style:normal;font-size:12px;color:var(--faint)}
+.chart{position:relative;border:1px solid var(--line);border-radius:12px;padding:14px 14px 8px;background:var(--bg)}
+.chart h3{margin:0 0 10px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:150px;margin-top:22px;border-bottom:1px solid var(--line);position:relative}
+.bars .b{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;cursor:default;position:relative}
+.bars .b i{display:block;width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:0}
+.bars .b:hover i,.bars .b:focus-visible i{filter:brightness(1.15)}
+.bars .gl{position:absolute;left:0;right:0;border-top:1px dashed var(--line);pointer-events:none}
+.bars .gl span{position:absolute;right:0;top:-16px;font:500 11px var(--mono);color:var(--faint)}
+.xax{display:flex;justify-content:space-between;font:500 11px var(--mono);color:var(--faint);margin-top:6px}
+.tip{position:absolute;z-index:5;pointer-events:none;background:var(--fg);color:var(--bg);border-radius:8px;padding:6px 9px;font-size:12px;font-weight:700;white-space:nowrap;transform:translate(-50%,-100%)}
+.stt{width:100%;border-collapse:collapse;font-size:14px}
+.stt th{text-align:left;font-size:12px;color:var(--muted);font-weight:700;padding:8px;border-bottom:1px solid var(--line)}
+.stt td{padding:8px;border-bottom:1px solid var(--line)}
+.stt td.n,.stt th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.tbox{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.cbox{display:flex;gap:10px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:14px}.cbox b{color:var(--fg)}
+#st-body{display:flex;flex-direction:column;gap:14px}
+#st-body h3{margin:6px 0 0}#st-body .sub{margin:-8px 0 0}
+.grid2s{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
 .card h3{font-size:17px}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5;cursor:pointer}
 .check input{accent-color:var(--accent);width:18px;height:18px;flex:none;margin-top:2px}
@@ -155,7 +183,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v4</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v5</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -188,6 +216,14 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
       <label class="f"><span>Mini App havolasi (ixtiyoriy)</span><input class="field mono" id="s-bot" placeholder="https://t.me/bot_nomi/app" autocapitalize="off"></label>
       <label class="f"><span>MP3 sifati (standart)</span><select class="field" id="s-kbps"><option value="128">128 kbps</option><option value="160">160 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></label>
     </div>
+  </section>
+
+  <section class="card" id="stats" hidden>
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><h2>Statistika</h2><p class="note" style="margin:4px 0 0" id="st-note">Tinglovchilar, o'rnatishlar va ulashilgan havolalar</p></div>
+      <div class="seg" role="group" aria-label="Davr" id="st-range"><button type="button" data-d="7">7 kun</button><button type="button" data-d="30" aria-pressed="true">30 kun</button><button type="button" data-d="90">90 kun</button><button type="button" data-d="365">1 yil</button></div>
+    </div>
+    <div id="st-body"><p class="note">Yuklanmoqda…</p></div>
   </section>
 
   <section class="card" id="materials" hidden>
@@ -463,7 +499,7 @@ async function connect(){
     await loadPlaylist();
     $("conn-form").hidden=true;$("conn-ok").hidden=false;$("conn-edit").hidden=false;$("conn-repo").textContent=CFG.owner+"/"+CFG.repo+" · "+CFG.branch;
     $("conn-state").textContent="Ulangan";$("conn-state").className="tag ok";
-    $("settings").hidden=false;$("materials").hidden=false;$("gh-msg").textContent="";
+    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;$("gh-msg").textContent="";loadStats();
   }catch(e){$("gh-msg").textContent=e.message;$("conn-state").textContent="Ulanmagan";$("conn-state").className="tag mute"}
 }
 $("gh-connect").addEventListener("click",function(){
@@ -492,6 +528,81 @@ $("nettest").addEventListener("click",async function(){
   b.disabled=false;b.textContent="Ulanishni tekshirish";
   openModal('<h2 id="m-title">Ulanish tekshiruvi</h2><pre class="log" style="white-space:pre-wrap">'+esc(res.join("\n"))+'</pre><div style="display:flex;justify-content:flex-end"><button class="btn primary" type="button" data-close>Yopish</button></div>');
 });
+/* ================= statistika ================= */
+var ST_DAYS=30;
+try{var sd=+localStorage.getItem("az_st_days");if([7,30,90,365].indexOf(sd)>=0)ST_DAYS=sd}catch(e){}
+function syncRange(){[].forEach.call($("st-range").children,function(b){b.setAttribute("aria-pressed",String(+b.getAttribute("data-d")===ST_DAYS))})}
+syncRange();
+$("st-range").addEventListener("click",function(e){var b=e.target.closest("[data-d]");if(!b)return;ST_DAYS=+b.getAttribute("data-d");try{localStorage.setItem("az_st_days",String(ST_DAYS))}catch(x){}syncRange();loadStats()});
+var CC={UZ:"O'zbekiston",RU:"Rossiya",KZ:"Qozog'iston",KG:"Qirg'iziston",TJ:"Tojikiston",TM:"Turkmaniston",TR:"Turkiya",US:"AQSH",KR:"Koreya",AE:"BAA",DE:"Germaniya",GB:"Britaniya",PK:"Pokiston",AF:"Afg'oniston",PL:"Polsha",CZ:"Chexiya"};
+var SRC={telegram:"Telegram ichida",ilova:"O'rnatilgan ilova",brauzer:"Brauzer"};
+function nf(n){return (+n||0).toLocaleString("ru-RU")}
+function titleOf(id){var t=(DATA.tracks||[]).filter(function(x){return x.id===id})[0];return t?t.title:id}
+function setupHTML(kind){
+  return '<div class="cbox" style="flex-direction:column;align-items:flex-start;gap:8px"><b>'+(kind==="nodb"?"Statistika bazasi hali ulanmagan.":"Statistika serveri hali ishga tushmagan.")+'</b>'+
+  '<span>Bir martalik sozlash (2 daqiqa, bepul):</span><ol style="margin:0;padding-left:18px;display:grid;gap:4px">'+
+  '<li>dash.cloudflare.com → <b>Storage &amp; databases</b> → <b>D1 SQL database</b> → <b>Create</b> → nomi: <span class="mono">az-stats</span> → Create.</li>'+
+  '<li><b>Workers &amp; Pages</b> → <b>az-playlist</b> → <b>Settings</b> → <b>Bindings</b> → <b>Add</b> → <b>D1 database</b>. Variable name: <span class="mono">DB</span>, database: <span class="mono">az-stats</span> → Save.</li>'+
+  '<li><b>Deployments</b> → eng yuqoridagi qatorda <b>⋯</b> → <b>Retry deployment</b>.</li></ol>'+
+  '<span class="note">Shundan keyin sayt tashriflarni sanay boshlaydi va raqamlar shu yerda chiqadi.</span></div>';
+}
+function barsHTML(rows,key,label){
+  var map={};rows.forEach(function(r){map[r.day]=r});
+  var days=[],d=new Date(Date.now()+5*3600e3);for(var i=ST_DAYS-1;i>=0;i--){days.push(new Date(d.getTime()-i*864e5).toISOString().slice(0,10))}
+  if(ST_DAYS>90){/* haftalik guruh */var wk=[];for(var j=0;j<days.length;j+=7){var g=days.slice(j,j+7),v=0;g.forEach(function(x){v+=+((map[x]||{})[key]||0)});wk.push({day:g[0],to:g[g.length-1],v:v})}days=wk}
+  else days=days.map(function(x){return {day:x,v:+((map[x]||{})[key]||0)}});
+  var max=Math.max.apply(null,days.map(function(x){return x.v}).concat([1])),step=Math.pow(10,Math.floor(Math.log10(max))),top=Math.ceil(max/step)*step;
+  var fmtD=function(s){var p=s.split("-");return p[2]+"."+p[1]};
+  var h='<div class="bars" data-bars>';
+  [0.5,1].forEach(function(f){h+='<div class="gl" style="bottom:'+(f*100)+'%"><span>'+nf(Math.round(top*f))+'</span></div>'});
+  days.forEach(function(x){h+='<span class="b" tabindex="0" data-tip="'+esc((x.to?fmtD(x.day)+"–"+fmtD(x.to):fmtD(x.day))+" · "+nf(x.v)+" "+label)+'"><i style="height:'+(x.v?Math.max(2,x.v/top*100):0)+'%"></i></span>'});
+  h+='</div><div class="xax"><span>'+fmtD(days[0].day)+'</span><span>'+fmtD(days[days.length-1].to||days[days.length-1].day)+'</span></div>';
+  return h;
+}
+function tableHTML(head,rows){
+  if(!rows.length)return '<p class="note" style="margin:0;padding:12px">Hali ma\'lumot yo\'q.</p>';
+  return '<div class="tbox"><table class="stt"><thead><tr>'+head.map(function(c){return '<th'+(c.n?' class="n"':'')+'>'+c.t+'</th>'}).join("")+'</tr></thead><tbody>'+
+    rows.map(function(r){return '<tr>'+r.map(function(v,i){return '<td'+(head[i].n?' class="n"':'')+'>'+(head[i].n?nf(v):esc(v))+'</td>'}).join("")+'</tr>'}).join("")+'</tbody></table></div>';
+}
+async function loadStats(){
+  var box=$("st-body");box.innerHTML='<p class="note">Yuklanmoqda…</p>';
+  var r,j;
+  try{r=await fetch("api/stats?days="+ST_DAYS,{headers:{Authorization:"Bearer "+CFG.token},cache:"no-store"});}
+  catch(e){box.innerHTML='<p class="note">Statistika serveriga ulanib bo\'lmadi. Internetni tekshirib, qayta oching.</p>';return}
+  var ct=r.headers.get("content-type")||"";
+  if(!/json/.test(ct)){box.innerHTML=setupHTML("nofn");return}
+  try{j=await r.json()}catch(e){box.innerHTML=setupHTML("nofn");return}
+  if(j.error==="nodb"){box.innerHTML=setupHTML("nodb");return}
+  if(j.error==="auth"){box.innerHTML='<p class="note">Token bu repo uchun yozish huquqiga ega emas, statistika ko\'rsatilmaydi.</p>';return}
+  if(!r.ok){box.innerHTML='<p class="note">Statistika xatosi ('+r.status+(j.detail?': '+esc(j.detail):'')+'). Keyinroq qayta urinib ko\'ring.</p>';return}
+  var c=j.counts||{},u=j.unique||{},a=j.allTime||{};
+  var k=[
+    ["Tashrif buyuruvchilar",u.visitors,"noyob qurilma"],
+    ["Ilovani o'rnatganlar",u.installs,"jami: "+nf(a.installs)+" ta"],
+    ["Havola orqali kelganlar",u.via_link,nf(u.installs_ref)+" tasi ilovani o'rnatdi"],
+    ["Tinglashlar",c.play,"intro va to'liq"],
+    ["Ulashishlar",c.share,"«Do'stga yuborish»"],
+    ["Buyurtma bosishlar",c.order,"Telegram'ga o'tish"]
+  ];
+  var h='<div class="kpis">'+k.map(function(x){return '<div class="kpi"><span>'+x[0]+'</span><b>'+nf(x[1])+'</b><i>'+esc(x[2])+'</i></div>'}).join("")+'</div>';
+  h+='<div class="chart"><h3>Kunlik tashrif buyuruvchilar</h3>'+barsHTML(j.daily||[],"visitors","kishi")+'</div>';
+  h+='<div class="chart"><h3>Kunlik tinglashlar</h3>'+barsHTML(j.daily||[],"plays","tinglash")+'</div>';
+  h+='<h3>Qo\'shiqlar</h3>'+tableHTML([{t:"Qo'shiq"},{t:"Tinglash",n:1},{t:"Tinglovchi",n:1},{t:"Ulashildi",n:1},{t:"Buyurtma",n:1}],(j.tracks||[]).map(function(x){return [titleOf(x.track),x.plays,x.listeners,x.shares,x.orders]}));
+  h+='<h3>Ulashilgan havolalar</h3><p class="note sub">Do\'stiga yuborilgan havolani nechta kishi ochgan va ulardan nechtasi ilovani o\'rnatgan</p>'+tableHTML([{t:"Qo'shiq havolasi"},{t:"Ochdi",n:1},{t:"O'rnatdi",n:1}],(j.refs||[]).map(function(x){return [titleOf(x.track),x.opened,x.installed]}));
+  h+='<div class="grid2s"><div>'+'<h3 style="margin:0 0 8px">Qayerdan ochishyapti</h3>'+tableHTML([{t:"Manba"},{t:"Kishi",n:1}],(j.sources||[]).map(function(x){return [SRC[x.src]||x.src,x.visitors]}))+'</div>'+
+       '<div><h3 style="margin:0 0 8px">Mamlakatlar</h3>'+tableHTML([{t:"Mamlakat"},{t:"Kishi",n:1}],(j.countries||[]).map(function(x){return [CC[x.cc]||x.cc,x.visitors]}))+'</div></div>';
+  h+='<p class="note" style="margin:0">Anonim hisob: ism, telefon raqami yoki IP saqlanmaydi. Bitta telefon — bitta «kishi». Hisob '+(a.first_day?esc(a.first_day)+" dan":"sozlangan kundan")+' boshlangan.</p>';
+  box.innerHTML=h;
+  [].forEach.call(box.querySelectorAll("[data-bars]"),function(bars){
+    var tip=null,ch=bars.parentNode;
+    function show(el){if(!tip){tip=document.createElement("div");tip.className="tip";ch.appendChild(tip)}tip.textContent=el.getAttribute("data-tip");var r1=el.getBoundingClientRect(),r0=ch.getBoundingClientRect(),i=el.querySelector("i").getBoundingClientRect();tip.style.left=Math.min(Math.max(60,r1.left-r0.left+r1.width/2),r0.width-60)+"px";tip.style.top=(Math.min(i.top,r1.bottom-2)-r0.top-6)+"px"}
+    function hide(){if(tip){tip.remove();tip=null}}
+    bars.addEventListener("pointerover",function(e){var b=e.target.closest(".b");if(b)show(b)});
+    bars.addEventListener("pointerleave",hide);
+    bars.addEventListener("focusin",function(e){var b=e.target.closest(".b");if(b)show(b)});
+    bars.addEventListener("focusout",hide);
+  });
+}
 $("reload").addEventListener("click",async function(){try{await loadPlaylist();toast("Ro'yxat yangilandi.")}catch(e){toast(e.message,5000)}});
 if(CFG.owner&&CFG.repo&&CFG.token)connect();
 
