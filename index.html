@@ -67,6 +67,15 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.08;text-wrap:balance}
 .cstrip p{margin:0;flex:1;color:var(--muted)}
 .cstrip b{color:var(--fg)}
 
+/* banner video */
+.bnr{position:relative;margin:16px auto 0;border-radius:18px;overflow:hidden;background:#000;border:1px solid var(--line);width:100%;max-width:min(100%,calc(72vh * var(--ar,0.5625)));aspect-ratio:var(--ar,0.5625)}
+.bnr video{width:100%;height:100%;object-fit:cover;display:block}
+.bnr-b{position:absolute;top:10px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.bnr-b svg{width:20px;height:20px}
+.bnr-snd{left:10px}.bnr-x{right:10px}
+.bnr-snd.on{background:var(--accent);color:var(--accent-ink)}
+.bnr-cta{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);box-shadow:0 8px 24px rgba(0,0,0,.45);white-space:nowrap}
+
 /* featured */
 .feat{margin-top:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 .feat .info{display:flex;gap:12px;align-items:center}
@@ -202,6 +211,12 @@ footer{margin-top:18px;text-align:center}
 </div>
 
 <main class="wrap">
+  <section class="bnr" id="bnr" hidden aria-label="Reklama video">
+    <video id="bnr-v" muted loop playsinline preload="metadata" disablepictureinpicture controlslist="nodownload noplaybackrate"></video>
+    <button class="bnr-b bnr-snd" type="button" id="bnr-snd" aria-label="Ovozni yoqish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg></button>
+    <button class="bnr-b bnr-x" type="button" id="bnr-x" aria-label="Bannerni yopish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button class="btn primary bnr-cta" type="button" id="bnr-cta" hidden></button>
+  </section>
   <section class="feat" id="feat" aria-label="Tavsiya etilgan qo'shiq"></section>
 
   <div class="tabs" role="tablist" aria-label="Bo'limlar">
@@ -335,8 +350,28 @@ async function load(){
   $("count").textContent=nf+" ta qo'shiq · "+ni+" ta intro";
   $("tab-full").textContent="Playlist ("+nf+")";$("tab-intro").textContent="INTROSONGS ("+ni+")";
   if(nf===0&&ni>0&&TAB==="full"){TAB="intro";$("tab-full").setAttribute("aria-selected","false");$("tab-intro").setAttribute("aria-selected","true")}
-  renderFeatured();renderChips();renderList();deepLink();
+  renderBanner();renderFeatured();renderChips();renderList();deepLink();
 }
+/* ---------- banner video (admin → Sozlamalar → Banner video) ---------- */
+var BNR_ICON={off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>',on:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>'};
+function renderBanner(){
+  var b=(DATA.settings||{}).banner,box=$("bnr"),v=$("bnr-v");
+  var closed=false;try{closed=sessionStorage.getItem("az_bnr_x")===(b&&b.src)}catch(e){}
+  if(!b||!b.src||b.on===false||!safePath(b.src)||closed){box.hidden=true;try{v.pause();v.removeAttribute("src");v.load()}catch(e){}return}
+  if(b.w&&b.h)box.style.setProperty("--ar",String(b.w/b.h));
+  if(b.poster&&safePath(b.poster))v.poster=b.poster;
+  if(v.getAttribute("src")!==b.src){v.src=b.src}
+  box.hidden=false;var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});
+  var t=b.track&&byId(b.track),cta=$("bnr-cta");
+  if(t&&b.cta){cta.textContent=b.cta;cta.hidden=false;cta.onclick=function(){bnrMute(true);play(t,modeFor(t));openSheet()}}
+  else if(t){cta.textContent="Tinglash";cta.hidden=false;cta.onclick=function(){bnrMute(true);play(t,modeFor(t));openSheet()}}
+  else cta.hidden=true;
+}
+function bnrMute(m){var v=$("bnr-v"),b=$("bnr-snd");v.muted=m;b.classList.toggle("on",!m);b.innerHTML=m?BNR_ICON.off:BNR_ICON.on;b.setAttribute("aria-label",m?"Ovozni yoqish":"Ovozni o'chirish")}
+$("bnr-snd").addEventListener("click",function(){var v=$("bnr-v");if(v.muted){if(cur.t&&!au.paused)au.pause();bnrMute(false);v.currentTime=0;var p=v.play();if(p&&p.catch)p.catch(function(){})}else bnrMute(true);hap()});
+$("bnr-x").addEventListener("click",function(){var b=(DATA.settings||{}).banner;try{sessionStorage.setItem("az_bnr_x",b&&b.src||"1")}catch(e){}$("bnr").hidden=true;$("bnr-v").pause();hap()});
+/* banner ko'rinmay qolsa — to'xtaydi (trafik va batareyani tejash) */
+try{new IntersectionObserver(function(es){es.forEach(function(e){var v=$("bnr-v");if($("bnr").hidden)return;if(e.isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause()})},{threshold:.25}).observe($("bnr"))}catch(e){}
 function inTab(t){return TAB==="full"?!t.introOnly:!!(t.intro||t.introOnly)}
 function visible(){
   return TRACKS.filter(function(t){
@@ -416,6 +451,7 @@ function step(d){
 }
 au.addEventListener("ended",function(){step(1)});
 au.addEventListener("play",updateUI);
+au.addEventListener("play",function(){try{if(!$("bnr-v").muted)bnrMute(true)}catch(e){}});
 var lastPlayKey="";au.addEventListener("playing",function(){if(!cur.t)return;var k=cur.t.id+":"+cur.mode;if(k!==lastPlayKey){lastPlayKey=k;AN.play(cur.t.id,cur.mode)}});au.addEventListener("pause",updateUI);
 au.addEventListener("error",function(){if(cur.t)toast("Audio yuklanmadi. Internetni tekshiring.")});
 au.addEventListener("timeupdate",paintProgress);au.addEventListener("loadedmetadata",paintProgress);

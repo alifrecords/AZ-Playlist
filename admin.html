@@ -87,6 +87,11 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .stt td{padding:8px;border-bottom:1px solid var(--line)}
 .stt td.n,.stt th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .tbox{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.bnr{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:18px;border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:560px){.bnr{grid-template-columns:minmax(0,1fr)}}
+.bnr-prev{border:1px dashed var(--line);border-radius:12px;min-height:200px;display:grid;place-items:center;overflow:hidden;background:var(--bg)}
+.bnr-prev video{width:100%;display:block;max-height:390px;object-fit:contain;background:#000}
+.bnr-side{display:flex;flex-direction:column;gap:12px;min-width:0}
 .cbox{display:flex;gap:10px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:14px}.cbox b{color:var(--fg)}
 #st-body{display:flex;flex-direction:column;gap:14px}
 #st-body h3{margin:6px 0 0}#st-body .sub{margin:-8px 0 0}
@@ -183,7 +188,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v6</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v7</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -216,7 +221,20 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
       <label class="f"><span>Mini App havolasi (ixtiyoriy)</span><input class="field mono" id="s-bot" placeholder="https://t.me/bot_nomi/app" autocapitalize="off"></label>
       <label class="f"><span>MP3 sifati (standart)</span><select class="field" id="s-kbps"><option value="128">128 kbps</option><option value="160">160 kbps</option><option value="192" selected>192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></label>
     </div>
-  </section>
+      <div class="bnr" id="bnr">
+      <div class="bnr-prev" id="bnr-prev"><span class="note">Banner yo'q</span></div>
+      <div class="bnr-side">
+        <h3 style="margin:0">Banner video</h3>
+        <p class="note" style="margin:0">Saytga kirganlarga eng tepada ko'rinadi: reklama, yangi qo'shiq anonsi, aksiya. MP4 yoki WebM, 25 MB gacha. Ovozsiz aylanadi, tomoshabin ovozni o'zi yoqadi.</p>
+        <label class="f"><span>Tugma matni (ixtiyoriy)</span><input class="field" id="bnr-cta" placeholder="Masalan: Tinglash" maxlength="28"></label>
+        <label class="f"><span>Tugma bosilganda ochiladigan qo'shiq (ixtiyoriy)</span><select class="field" id="bnr-track"><option value="">— qo'shiq tanlanmagan —</option></select></label>
+        <label class="check"><input type="checkbox" id="bnr-on"><span>Saytda ko'rsatish</span></label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" id="bnr-pick">Video tanlash</button><button class="btn" type="button" id="bnr-del" hidden>Bannerni o'chirish</button></div>
+        <input type="file" id="bnr-file" accept="video/mp4,video/webm" hidden>
+        <span class="note" id="bnr-msg"></span>
+      </div>
+    </div>
+</section>
 
   <section class="card" id="stats" hidden>
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
@@ -470,7 +488,7 @@ async function loadPlaylist(){
   SAVED=pjson();markDirty();fillSettings();renderList();
 }
 function fillSettings(){
-  var s=DATA.settings;$("s-artist").value=s.artist||"";$("s-contact").value=s.contact||"";setTimeout(checkContact,0);$("s-bot").value=s.botApp||"";$("s-kbps").value=String(s.kbps||192);
+  var s=DATA.settings;$("s-artist").value=s.artist||"";$("s-contact").value=s.contact||"";setTimeout(checkContact,0);setTimeout(bnrRender,0);$("s-bot").value=s.botApp||"";$("s-kbps").value=String(s.kbps||192);
 }
 ["s-artist","s-contact","s-bot","s-kbps"].forEach(function(id){$(id).addEventListener("input",function(){
   var s=DATA.settings;s.artist=$("s-artist").value.trim();var c=$("s-contact").value.trim();if(/(t|telegram)\.me\//i.test(c))c=c.replace(/^@+/,"");else if(c)c=c.replace(/^@?/,"@");s.contact=c==="@"?"":c;checkContact();s.botApp=$("s-bot").value.trim();s.kbps=+$("s-kbps").value;markDirty();
@@ -527,6 +545,56 @@ $("nettest").addEventListener("click",async function(){
   }catch(e){res.push("✗ "+e.message+(e.cause?" ["+e.cause.name+": "+e.cause.message+"]":""));}
   b.disabled=false;b.textContent="Ulanishni tekshirish";
   openModal('<h2 id="m-title">Ulanish tekshiruvi</h2><pre class="log" style="white-space:pre-wrap">'+esc(res.join("\n"))+'</pre><div style="display:flex;justify-content:flex-end"><button class="btn primary" type="button" data-close>Yopish</button></div>');
+});
+/* ================= banner video ================= */
+function bnrRender(){
+  var b=(DATA.settings||{}).banner||null,pv=$("bnr-prev");
+  var sel=$("bnr-track");sel.innerHTML='<option value="">— qo\'shiq tanlanmagan —</option>'+(DATA.tracks||[]).map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.title)+'</option>'}).join("");
+  if(b&&b.src){pv.innerHTML='<video src="'+esc(rawUrl(b.src))+'" muted loop playsinline autoplay controls preload="metadata"></video>';$("bnr-del").hidden=false;$("bnr-pick").textContent="Boshqa video bilan almashtirish"}
+  else{pv.innerHTML='<span class="note">Banner yo\'q</span>';$("bnr-del").hidden=true;$("bnr-pick").textContent="Video tanlash"}
+  $("bnr-on").checked=!!(b&&b.src&&b.on!==false);$("bnr-on").disabled=!(b&&b.src);
+  $("bnr-cta").value=b&&b.cta||"";sel.value=b&&b.track||"";$("bnr-cta").disabled=$("bnr-track").disabled=!(b&&b.src);
+}
+function bnrSet(){var b=DATA.settings.banner;if(!b)return;b.on=$("bnr-on").checked;b.cta=$("bnr-cta").value.trim().slice(0,28);b.track=$("bnr-track").value||"";markDirty()}
+["bnr-on","bnr-cta","bnr-track"].forEach(function(id){$(id).addEventListener(id==="bnr-cta"?"input":"change",bnrSet)});
+function videoMeta(file){
+  return new Promise(function(res){
+    var v=document.createElement("video"),u=URL.createObjectURL(file),done=false;v.muted=true;v.playsInline=true;v.preload="auto";
+    function fin(poster){if(done)return;done=true;URL.revokeObjectURL(u);res({w:v.videoWidth||1080,h:v.videoHeight||1920,dur:v.duration||0,poster:poster})}
+    v.onloadeddata=function(){try{v.currentTime=Math.min(1.2,(v.duration||2)/3)}catch(e){fin(null)}};
+    v.onseeked=function(){try{var k=Math.min(1,720/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement("canvas");c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext("2d").drawImage(v,0,0,c.width,c.height);c.toBlob(function(b){fin(b)},"image/jpeg",0.8)}catch(e){fin(null)}};
+    v.onerror=function(){fin(null)};setTimeout(function(){fin(null)},15000);v.src=u;
+  });
+}
+$("bnr-pick").addEventListener("click",function(){if(pjson()!==SAVED){toast("Avval saqlanmagan o'zgarishlarni saqlang yoki bekor qiling.");return}$("bnr-file").click()});
+$("bnr-file").addEventListener("change",async function(){
+  var f=this.files&&this.files[0];this.value="";if(!f)return;
+  if(!/^video\/(mp4|webm)$/.test(f.type)&&!/\.(mp4|webm)$/i.test(f.name)){toast("Faqat MP4 yoki WebM video.",5000);return}
+  if(f.size>MAX_FILE){toast("Video 25 MB dan katta. Siqib qayta yuklang.",6000);return}
+  var msg=$("bnr-msg"),btn=$("bnr-pick");btn.disabled=true;msg.textContent="Video tekshirilmoqda…";
+  var before=JSON.stringify(DATA);
+  try{
+    var m=await videoMeta(f),st=stamp(),ext=/webm/i.test(f.type||f.name)?"webm":"mp4",old=DATA.settings.banner||null;
+    var files=[{path:"media/banner-"+st+"."+ext,data:f}];
+    var nb={src:"media/banner-"+st+"."+ext,w:m.w,h:m.h,on:true,cta:old&&old.cta||"",track:old&&old.track||""};
+    if(m.poster){files.push({path:"media/banner-"+st+".jpg",data:m.poster});nb.poster="media/banner-"+st+".jpg"}
+    if(old){[old.src,old.poster].forEach(function(p){if(p&&/^media\/banner-/.test(p))files.push({path:p,data:null})})}
+    DATA.settings.banner=nb;files.push({path:"playlist.json",data:pjson()});
+    msg.textContent="GitHub'ga yuklanmoqda… ("+(f.size/1048576).toFixed(1)+" MB)";
+    await commitFiles(files,"Banner video yangilandi",function(l){msg.textContent=l});
+    SAVED=pjson();markDirty();bnrRender();msg.textContent="Joylandi. Sayt 1–2 daqiqada yangilanadi.";toast("Banner joylandi.",4000);
+  }catch(e){DATA=JSON.parse(before);bnrRender();msg.textContent="XATO: "+e.message;toast(e.message,6000)}
+  btn.disabled=false;
+});
+$("bnr-del").addEventListener("click",async function(){
+  var b=DATA.settings.banner;if(!b)return;
+  if(pjson()!==SAVED){toast("Avval saqlanmagan o'zgarishlarni saqlang yoki bekor qiling.");return}
+  var before=JSON.stringify(DATA),btn=this;btn.disabled=true;
+  try{var files=[];[b.src,b.poster].forEach(function(p){if(p&&/^media\/banner-/.test(p))files.push({path:p,data:null})});
+    delete DATA.settings.banner;files.push({path:"playlist.json",data:pjson()});
+    await commitFiles(files,"Banner olib tashlandi");SAVED=pjson();markDirty();bnrRender();toast("Banner olib tashlandi.")}
+  catch(e){DATA=JSON.parse(before);bnrRender();toast(e.message,6000)}
+  btn.disabled=false;
 });
 function checkContact(){
   var h=$("s-contact-hint");if(!h)return;var c=String((DATA.settings||{}).contact||"").trim();

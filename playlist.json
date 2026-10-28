@@ -3,7 +3,16 @@
     "artist": "AZIMXODJAYEV MUSIC",
     "contact": "@Mashhurbek_Azimxodjayev",
     "botApp": "https://t.me/Azimxodjayev_music_bot/playlist",
-    "kbps": 192
+    "kbps": 192,
+    "banner": {
+      "src": "media/banner-bffd00.mp4",
+      "w": 1080,
+      "h": 1920,
+      "on": true,
+      "cta": "Tinglash",
+      "track": "farzona-sefy8g",
+      "poster": "media/banner-bffd00.jpg"
+    }
   },
   "tracks": [
     {
