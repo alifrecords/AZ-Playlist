@@ -92,6 +92,19 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .bnr-prev{border:1px dashed var(--line);border-radius:12px;min-height:200px;display:grid;place-items:center;overflow:hidden;background:var(--bg)}
 .bnr-prev video{width:100%;display:block;max-height:390px;object-fit:contain;background:#000}
 .bnr-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.tgbox{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:14px;color:var(--muted)}
+.tgbox b{color:var(--fg)}
+.acm{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.acm.off{opacity:.55}
+.acm .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.acm .h b{color:var(--fg);font-size:14px}
+.acm .h .tr{color:var(--accent);font-weight:700}
+.acm .h time{margin-left:auto;font:500 12px var(--mono)}
+.acm p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
+.acm .rep{border-left:3px solid var(--accent);padding:6px 10px;background:rgba(242,179,61,.08);border-radius:0 8px 8px 0;font-size:13.5px}
+.acm .ops{display:flex;gap:6px;flex-wrap:wrap}
+.acm textarea{width:100%;min-height:60px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);padding:8px 10px;font:inherit;font-size:14px}
+#cm-body{display:flex;flex-direction:column;gap:8px}
 .cbox{display:flex;gap:10px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:14px}.cbox b{color:var(--fg)}
 #st-body{display:flex;flex-direction:column;gap:14px}
 #st-body h3{margin:6px 0 0}#st-body .sub{margin:-8px 0 0}
@@ -205,7 +218,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v10</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v11</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -259,6 +272,15 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
       <div class="seg" role="group" aria-label="Davr" id="st-range"><button type="button" data-d="7">7 kun</button><button type="button" data-d="30" aria-pressed="true">30 kun</button><button type="button" data-d="90">90 kun</button><button type="button" data-d="365">1 yil</button></div>
     </div>
     <div id="st-body"><p class="note">Yuklanmoqda…</p></div>
+  </section>
+
+  <section class="card" id="cmts" hidden>
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><h2>Izohlar</h2><p class="note" style="margin:4px 0 0" id="cm-note">Tinglovchilarning izohlari darhol chiqadi — keraksizini shu yerda yashiring yoki o'chiring</p></div>
+      <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select class="field" id="cm-filter" style="min-height:40px;max-width:260px"><option value="">Barcha qo'shiqlar</option></select><button class="btn sm" type="button" id="cm-reload">Yangilash</button></span>
+    </div>
+    <div class="tgbox" id="tg-box"></div>
+    <div id="cm-body"><p class="note">Yuklanmoqda…</p></div>
   </section>
 
   <section class="card" id="materials" hidden>
@@ -540,7 +562,7 @@ async function connect(){
     await loadPlaylist();
     $("conn-form").hidden=true;$("conn-ok").hidden=false;$("conn-edit").hidden=false;$("conn-repo").textContent=CFG.owner+"/"+CFG.repo+" · "+CFG.branch;
     $("conn-state").textContent="Ulangan";$("conn-state").className="tag ok";
-    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;clearInterval(tick);$("gh-msg").textContent="";loadStats();
+    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;$("cmts").hidden=false;clearInterval(tick);$("gh-msg").textContent="";loadStats();loadComments();loadTg();
   }catch(e){clearInterval(tick);$("gh-msg").textContent=e.status===0?"GitHub'ga ulanib bo'lmadi: internet yoki VPN'ni tekshiring (VPN yoqilgan bo'lsa — o'chirib, o'chiq bo'lsa — yoqib ko'ring), keyin «Ulanish»ni qayta bosing.":e.message;$("conn-state").textContent="Ulanmagan";$("conn-state").className="tag mute"}
 }
 $("gh-connect").addEventListener("click",function(){
@@ -628,6 +650,64 @@ function checkContact(){
   else txt="⚠ Nik noto'g'ri: faqat lotin harflari, raqam va _ (4–32 belgi).";
   h.textContent=txt;h.style.color=ok?"var(--ok, #8FD9A8)":"var(--bad, #FF9B8A)";
 }
+/* ================= izohlar ================= */
+async function api(path,opt){
+  opt=opt||{};var r=await fetch(path,{method:opt.method||"GET",headers:{Authorization:"Bearer "+CFG.token,"Content-Type":"application/json"},body:opt.body?JSON.stringify(opt.body):undefined,cache:"no-store"});
+  var j=null;try{if(/json/.test(r.headers.get("content-type")||""))j=await r.json()}catch(e){}
+  if(!j){var e1=new Error("nofn");e1.code="nofn";throw e1}
+  if(!r.ok||j.error){var e2=new Error(j.msg||j.error||("HTTP "+r.status));e2.code=j.error;throw e2}
+  return j;
+}
+function ago(ts){var d=(Date.now()-ts)/1000;if(d<60)return "hozir";if(d<3600)return Math.floor(d/60)+" daq oldin";if(d<86400)return Math.floor(d/3600)+" soat oldin";var x=new Date(ts);return String(x.getDate()).padStart(2,"0")+"."+String(x.getMonth()+1).padStart(2,"0")+" "+String(x.getHours()).padStart(2,"0")+":"+String(x.getMinutes()).padStart(2,"0")}
+var CMS=[];
+function cmFilterFill(){var sel=$("cm-filter"),v=sel.value;sel.innerHTML='<option value="">Barcha qo\'shiqlar</option>'+(DATA.tracks||[]).map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.title)+'</option>'}).join("");sel.value=v}
+function cmRender(){
+  var box=$("cm-body");
+  if(!CMS.length){box.innerHTML='<p class="note" style="margin:0">Hali izoh yo\'q.</p>';return}
+  box.innerHTML=CMS.map(function(c){
+    return '<article class="acm'+(c.hidden?' off':'')+'" data-id="'+c.id+'"><div class="h"><b>'+esc(c.name)+'</b>'+(c.tg?'<span class="tag ok">Telegram</span>':'')+(c.hidden?'<span class="tag mute">Yashirilgan</span>':'')+'<span class="tr">'+esc(titleOf(c.track))+'</span><time>'+ago(c.ts)+'</time></div><p>'+esc(c.text)+'</p>'+
+      (c.reply?'<div class="rep"><b>Javobingiz:</b> '+esc(c.reply)+'</div>':'')+
+      '<div class="ops"><button class="btn sm" type="button" data-ca="reply">'+(c.reply?"Javobni o\'zgartirish":"Javob yozish")+'</button><button class="btn sm" type="button" data-ca="'+(c.hidden?'show':'hide')+'">'+(c.hidden?"Ko\'rsatish":"Yashirish")+'</button><button class="btn sm" type="button" data-ca="delete" style="color:var(--bad,#FF9B8A)">O\'chirish</button></div></article>';
+  }).join("");
+}
+async function loadComments(){
+  cmFilterFill();var box=$("cm-body");
+  try{var j=await api("api/admin/comments?limit=300"+($("cm-filter").value?"&t="+encodeURIComponent($("cm-filter").value):""));CMS=j.comments||[];
+    $("cm-note").textContent="Jami "+nf(j.total)+" ta izoh, oxirgi 24 soatda "+nf(j.today)+" ta. Izohlar darhol chiqadi — keraksizini yashiring yoki o'chiring.";cmRender()}
+  catch(e){box.innerHTML=e.code==="nodb"||e.code==="nofn"?setupHTML(e.code==="nodb"?"nodb":"nofn"):'<p class="note">Izohlar yuklanmadi: '+esc(e.message)+'</p>'}
+}
+$("cm-filter").addEventListener("change",loadComments);$("cm-reload").addEventListener("click",function(){loadComments();loadTg()});
+$("cm-body").addEventListener("click",async function(e){
+  var b=e.target.closest("[data-ca]");if(!b)return;var art=b.closest("[data-id]"),id=+art.getAttribute("data-id"),act=b.getAttribute("data-ca"),c=CMS.filter(function(x){return x.id===id})[0];if(!c)return;
+  if(act==="reply"){
+    if(art.querySelector("textarea"))return;
+    var w=document.createElement("div");w.style.cssText="display:flex;flex-direction:column;gap:6px";w.innerHTML='<textarea maxlength="500" placeholder="Javobingiz… (bo\'sh qoldirsangiz, javob olib tashlanadi)">'+esc(c.reply||"")+'</textarea><div class="ops"><button class="btn primary sm" type="button" data-rs>Saqlash</button><button class="btn sm" type="button" data-rc>Bekor</button></div>';
+    art.appendChild(w);var ta=w.querySelector("textarea");ta.focus();
+    w.querySelector("[data-rc]").onclick=function(){w.remove()};
+    w.querySelector("[data-rs]").onclick=async function(){this.disabled=true;try{await api("api/admin/comments",{method:"POST",body:{id:id,action:"reply",reply:ta.value}});c.reply=ta.value.trim()||null;cmRender();toast("Javob saqlandi.")}catch(x){this.disabled=false;toast(x.message,5000)}};
+    return;
+  }
+  if(act==="delete"){
+    openModal('<h2 id="m-title">Izohni o\'chirish</h2><p style="margin:0;color:var(--muted)"><b style="color:var(--fg)">'+esc(c.name)+':</b> '+esc(c.text.slice(0,200))+'</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn dangerfill" type="button" id="cd-ok">O\'chirish</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
+    $("cd-ok").onclick=async function(){this.disabled=true;try{await api("api/admin/comments",{method:"POST",body:{id:id,action:"delete"}});CMS=CMS.filter(function(x){return x.id!==id});closeModal();cmRender();toast("Izoh o'chirildi.")}catch(x){this.disabled=false;toast(x.message,5000)}};
+    return;
+  }
+  b.disabled=true;
+  try{await api("api/admin/comments",{method:"POST",body:{id:id,action:act}});c.hidden=act==="hide";cmRender();toast(act==="hide"?"Izoh yashirildi.":"Izoh yana ko'rinadi.")}catch(x){b.disabled=false;toast(x.message,5000)}
+});
+/* Telegram xabarnomalari */
+async function loadTg(){
+  var box=$("tg-box");
+  try{var j=await api("api/admin/telegram");
+    if(!j.bot){box.innerHTML='<span>🔔 <b>Yangi izoh haqida Telegram xabari</b> — hali sozlanmagan. Cloudflare → az-playlist → Settings → <b>Variables and secrets</b> → Add → Type: <b>Secret</b>, Name: <span class="mono">BOT_TOKEN</span>, Value: @BotFather bergan bot tokeni → Save, keyin Deployments → Retry deployment. Shu bilan Telegram ismlari ham tasdiqlanadi (✔).</span>';return}
+    if(!j.linked){box.innerHTML='<span>🔔 Bot ulangan'+(j.botName?' (@'+esc(j.botName)+')':'')+'. Xabarlar kelishi uchun Telegram\'da botga <b>/start</b> yozing va bosing:</span><button class="btn primary sm" type="button" id="tg-link">Bog\'lash</button>';
+      $("tg-link").onclick=async function(){this.disabled=true;try{var r=await api("api/admin/telegram",{method:"POST",body:{action:"link"}});toast("Bog'landi: "+r.chatName);loadTg()}catch(x){this.disabled=false;toast(x.message,6000)}};return}
+    box.innerHTML='<span>🔔 Yangi izohlar Telegram\'ga keladi: <b>'+esc(j.chatName||"bog\'langan")+'</b>'+(j.botName?' · @'+esc(j.botName):'')+'</span><button class="btn sm" type="button" id="tg-test">Sinov xabari</button><button class="btn sm" type="button" id="tg-un">Uzish</button>';
+    $("tg-test").onclick=async function(){try{var r=await api("api/admin/telegram",{method:"POST",body:{action:"test"}});toast(r.ok?"Sinov xabari yuborildi.":"Yuborilmadi.")}catch(x){toast(x.message,5000)}};
+    $("tg-un").onclick=async function(){try{await api("api/admin/telegram",{method:"POST",body:{action:"unlink"}});loadTg()}catch(x){toast(x.message,5000)}};
+  }catch(e){box.hidden=e.code==="nodb"||e.code==="nofn";if(!box.hidden)box.textContent="Telegram holati yuklanmadi: "+e.message}
+}
+
 /* ================= statistika ================= */
 var ST_DAYS=30;
 try{var sd=+localStorage.getItem("az_st_days");if([7,30,90,365].indexOf(sd)>=0)ST_DAYS=sd}catch(e){}
@@ -682,12 +762,14 @@ async function loadStats(){
     ["Havola orqali kelganlar",u.via_link,nf(u.installs_ref)+" tasi ilovani o'rnatdi"],
     ["Tinglashlar",c.play,"intro va to'liq"],
     ["Ulashishlar",c.share,"«Do'stga yuborish»"],
-    ["Buyurtma bosishlar",c.order,"Telegram'ga o'tish"]
+    ["Buyurtma bosishlar",c.order,"Telegram'ga o'tish"],
+    ["Layklar",Object.keys(j.likes||{}).reduce(function(a,k){return a+(+j.likes[k]||0)},0),"jami, barcha davr"],
+    ["Izohlar",Object.keys(j.commentCounts||{}).reduce(function(a,k){return a+(+j.commentCounts[k]||0)},0),"ko'rinib turganlari"]
   ];
   var h='<div class="kpis">'+k.map(function(x){return '<div class="kpi"><span>'+x[0]+'</span><b>'+nf(x[1])+'</b><i>'+esc(x[2])+'</i></div>'}).join("")+'</div>';
   h+='<div class="chart"><h3>Kunlik tashrif buyuruvchilar</h3>'+barsHTML(j.daily||[],"visitors","kishi")+'</div>';
   h+='<div class="chart"><h3>Kunlik tinglashlar</h3>'+barsHTML(j.daily||[],"plays","tinglash")+'</div>';
-  h+='<h3>Qo\'shiqlar</h3>'+tableHTML([{t:"Qo'shiq"},{t:"Tinglash",n:1},{t:"Tinglovchi",n:1},{t:"Ulashildi",n:1},{t:"Buyurtma",n:1}],(j.tracks||[]).map(function(x){return [titleOf(x.track),x.plays,x.listeners,x.shares,x.orders]}));
+  h+='<h3>Qo\'shiqlar</h3>'+tableHTML([{t:"Qo'shiq"},{t:"Tinglash",n:1},{t:"Tinglovchi",n:1},{t:"Layk",n:1},{t:"Izoh",n:1},{t:"Ulashildi",n:1},{t:"Buyurtma",n:1}],(function(){var L=j.likes||{},C=j.commentCounts||{},rows={},order=[];(j.tracks||[]).forEach(function(x){rows[x.track]=x;order.push(x.track)});Object.keys(L).concat(Object.keys(C)).forEach(function(k){if(!rows[k]){rows[k]={track:k,plays:0,listeners:0,shares:0,orders:0};order.push(k)}});return order.map(function(k){var x=rows[k];return [titleOf(k),x.plays,x.listeners,L[k]||0,C[k]||0,x.shares,x.orders]})})());
   h+='<h3>Ulashilgan havolalar</h3><p class="note sub">Do\'stiga yuborilgan havolani nechta kishi ochgan va ulardan nechtasi ilovani o\'rnatgan</p>'+tableHTML([{t:"Qo'shiq havolasi"},{t:"Ochdi",n:1},{t:"O'rnatdi",n:1}],(j.refs||[]).map(function(x){return [titleOf(x.track),x.opened,x.installed]}));
   h+='<div class="grid2s"><div>'+'<h3 style="margin:0 0 8px">Qayerdan ochishyapti</h3>'+tableHTML([{t:"Manba"},{t:"Kishi",n:1}],(j.sources||[]).map(function(x){return [SRC[x.src]||x.src,x.visitors]}))+'</div>'+
        '<div><h3 style="margin:0 0 8px">Mamlakatlar</h3>'+tableHTML([{t:"Mamlakat"},{t:"Kishi",n:1}],(j.countries||[]).map(function(x){return [CC[x.cc]||x.cc,x.visitors]}))+'</div></div>';

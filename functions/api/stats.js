@@ -1,32 +1,6 @@
 // GET /api/stats?days=30 — faqat admin uchun. Kirish: admin sahifadagi GitHub token
 // (Authorization: Bearer ...). Server tokenni GitHub'da tekshiradi: shu repoga yozish huquqi bo'lsa — ruxsat.
-import { ensureSchema, json } from "./_db.js";
-
-const REPO = "alifrecords/AZ-Playlist";
-const okTokens = new Map(); // token xeshi -> amal qilish muddati (shu server nusxasi ichida)
-
-async function sha256(s) {
-  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-async function isAdmin(request, env) {
-  const h = request.headers.get("Authorization") || "";
-  const token = h.replace(/^Bearer\s+/i, "").trim();
-  if (!token || token.length > 300) return false;
-  const key = await sha256(token);
-  const exp = okTokens.get(key);
-  if (exp && exp > Date.now()) return true;
-  const repo = env.STATS_REPO || REPO;
-  const r = await fetch((env.GH_API || "https://api.github.com") + "/repos/" + repo, {
-    headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "User-Agent": "az-music-stats" },
-  });
-  if (!r.ok) return false;
-  const j = await r.json();
-  if (!j.permissions || !j.permissions.push) return false;
-  okTokens.set(key, Date.now() + 10 * 60 * 1000);
-  return true;
-}
+import { ensureSchema, json, isAdmin } from "./_db.js";
 
 export async function onRequestGet(ctx) {
   try {
@@ -66,6 +40,15 @@ async function handle({ request, env }) {
     q("SELECT cc, COUNT(DISTINCT vid) visitors FROM ev WHERE day >= ? AND e='open' AND cc != '' GROUP BY cc ORDER BY visitors DESC LIMIT 8", since),
     q("SELECT COUNT(DISTINCT CASE WHEN e='install' THEN vid END) installs, COUNT(DISTINCT vid) visitors, MIN(day) first_day FROM ev"),
   ]);
+  let likes = {}, cmts = {};
+  try {
+    const [lk, cm] = await env.DB.batch([
+      env.DB.prepare("SELECT track, COUNT(*) n FROM likes GROUP BY track"),
+      env.DB.prepare("SELECT track, COUNT(*) n FROM comments WHERE hidden = 0 GROUP BY track"),
+    ]);
+    for (const r of lk.results) likes[r.track] = r.n;
+    for (const r of cm.results) cmts[r.track] = r.n;
+  } catch (e) {}
   const counts = {};
   for (const r of tot.results) counts[r.e] = r.n;
   return json({
@@ -79,5 +62,7 @@ async function handle({ request, env }) {
     sources: srcs.results,
     countries: ccs.results,
     allTime: allTime.results[0] || {},
+    likes,
+    commentCounts: cmts,
   });
 }
