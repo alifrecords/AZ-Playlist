@@ -205,7 +205,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v8</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v9</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -485,8 +485,8 @@ async function commitFiles(files,message,onLog){
   log("commit: "+cm.sha.slice(0,7)+" · tayyor"+(anyParts?" (bo'laklarni GitHub boti ~1 daqiqada yig'adi)":""));
   return cm.sha;
 }
-async function readRepoFile(path){
-  var r=await gh("/contents/"+path.split("/").map(encodeURIComponent).join("/")+"?ref="+encodeURIComponent(CFG.branch),{accept:"application/vnd.github.raw",raw:true,allow404:true});
+async function readRepoFile(path,o){
+  var r=await gh("/contents/"+path.split("/").map(encodeURIComponent).join("/")+"?ref="+encodeURIComponent(CFG.branch),Object.assign({accept:"application/vnd.github.raw",raw:true,allow404:true,timeout:25000,tries:2},o||{}));
   return r;
 }
 
@@ -521,9 +521,11 @@ window.addEventListener("beforeunload",function(e){if(DATA&&pjson()!==SAVED){e.p
 /* ================= connection ================= */
 $("gh-owner").value=CFG.owner;$("gh-repo").value=CFG.repo;$("gh-branch").value=CFG.branch||"main";$("gh-token").value=CFG.token;
 async function connect(){
-  $("gh-msg").textContent="Tekshirilmoqda…";
+  var msg=$("gh-msg"),t0=Date.now(),stage="GitHub'ga ulanmoqda…",tick=setInterval(function(){var s=Math.round((Date.now()-t0)/1000);if(s>=4)msg.textContent=stage+" "+s+" s"+(s>=10?" — internet sekin yoki VPN/antivirus to'sayapti":"")},1000);
+  msg.textContent=stage;
   try{
-    var info=await gh("");
+    var info=await gh("",{timeout:12000,tries:2,onRetry:function(){stage="Javob kelmadi, qayta urinilmoqda…";msg.textContent=stage}});
+    stage="Playlist o'qilmoqda…";msg.textContent=stage;
     if(info.permissions&&!info.permissions.push)throw new Error("Bu token bilan repoga yozib bo'lmaydi.");
     /* Repo nomi yoki egasi o'zgargan bo'lsa (masalan az-playlist → AZ-Playlist), yangi nomga o'tamiz:
        aks holda GitHub fayl yuborishni yo'naltiradi va brauzer "Failed to fetch" beradi. */
@@ -534,8 +536,8 @@ async function connect(){
     await loadPlaylist();
     $("conn-form").hidden=true;$("conn-ok").hidden=false;$("conn-edit").hidden=false;$("conn-repo").textContent=CFG.owner+"/"+CFG.repo+" · "+CFG.branch;
     $("conn-state").textContent="Ulangan";$("conn-state").className="tag ok";
-    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;$("gh-msg").textContent="";loadStats();
-  }catch(e){$("gh-msg").textContent=e.message;$("conn-state").textContent="Ulanmagan";$("conn-state").className="tag mute"}
+    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;clearInterval(tick);$("gh-msg").textContent="";loadStats();
+  }catch(e){clearInterval(tick);$("gh-msg").textContent=e.status===0?"GitHub'ga ulanib bo'lmadi: internet yoki VPN'ni tekshiring (VPN yoqilgan bo'lsa — o'chirib, o'chiq bo'lsa — yoqib ko'ring), keyin «Ulanish»ni qayta bosing.":e.message;$("conn-state").textContent="Ulanmagan";$("conn-state").className="tag mute"}
 }
 $("gh-connect").addEventListener("click",function(){
   CFG.owner=$("gh-owner").value.trim();CFG.repo=$("gh-repo").value.trim();CFG.branch=$("gh-branch").value.trim()||"main";CFG.token=$("gh-token").value.trim();
