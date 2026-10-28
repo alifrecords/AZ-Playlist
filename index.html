@@ -188,6 +188,24 @@ footer{margin-top:18px;text-align:center}
 .lic div b{display:flex;justify-content:space-between;gap:8px}
 .lic div b span{font-family:var(--mono);color:var(--accent);font-weight:500}
 .lic div p{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
+/* ilovani o'rnatish yo'riqnomasi */
+.ig{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;padding:16px 12px calc(96px + env(safe-area-inset-bottom,0px))}
+.ig.top{align-items:flex-start;padding-top:calc(90px + env(safe-area-inset-top,0px))}
+.ig-card{width:min(520px,100%);background:var(--surface-2);border:1px solid var(--accent);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.ig-head{display:flex;gap:12px;align-items:center}.ig-head b{display:block;font-size:17px}.ig-head div span{display:block;font-size:13px;color:var(--muted)}
+.ig-logo{width:48px;height:48px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:800 18px var(--display);flex:none}
+.ig ol{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:s}
+.ig li{display:block;position:relative;padding-left:38px;font-size:15px;line-height:1.9;counter-increment:s}
+.ig li::before{content:counter(s);position:absolute;left:0;top:3px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1}
+.ig li i{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:#5EB4FF;font-style:normal;vertical-align:middle;margin:0 2px}
+.ig li i svg{width:18px;height:18px}
+.ig-acts{display:flex;gap:10px;flex-wrap:wrap}.ig-acts .btn{flex:1}
+.ig-arrow{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;animation:igb 1s ease-in-out infinite;box-shadow:0 0 0 6px rgba(242,179,61,.25)}
+.ig-arrow svg{width:30px;height:30px}
+.ig.top .ig-arrow{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px));left:auto;right:14px;transform:none}
+.ig.top .ig-arrow svg{transform:rotate(180deg)}
+@keyframes igb{50%{margin-bottom:-10px}}
+@media (prefers-reduced-motion: reduce){.ig-arrow{animation:none}}
 /* obuna: qo'ng'iroqcha va taklif oynasi */
 #bell.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .ask{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--mp) + 14px + env(safe-area-inset-bottom,0px));z-index:55;width:min(560px,calc(100% - 20px));display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid var(--accent);box-shadow:0 14px 36px rgba(0,0,0,.5)}
@@ -318,6 +336,14 @@ footer{margin-top:18px;text-align:center}
 </div>
 
 <div class="toast" id="toast" hidden role="status"></div>
+<div class="ig" id="ig" hidden role="dialog" aria-modal="true" aria-labelledby="ig-t">
+  <div class="ig-card">
+    <div class="ig-head"><span class="ig-logo">AZ</span><div><b id="ig-t">AZ MUSIC ilovasini o'rnatish</b><span>Telefon ekranida ilova bo'lib turadi — bitta bosishda ochiladi</span></div></div>
+    <div id="ig-body"></div>
+    <div class="ig-acts"><button class="btn primary" type="button" id="ig-go" hidden>O'rnatish</button><button class="btn" type="button" id="ig-close">Keyinroq</button></div>
+  </div>
+  <div class="ig-arrow" id="ig-arrow" hidden aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v15M5 12l7 7 7-7"/></svg></div>
+</div>
 <div class="ask" id="ask" hidden role="dialog" aria-labelledby="ask-t"><span class="ask-i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></span><div style="flex:1;min-width:0"><b id="ask-t">Yangi qo'shiqlarni o'tkazib yubormang</b><span id="ask-s">Yangi qo'shiq chiqqanda sizga xabar yuboramiz.</span></div><div class="ask-b"><button class="btn sm primary" type="button" id="ask-yes">Ha</button><button class="btn sm" type="button" id="ask-no">Keyin</button></div></div>
 <audio id="au" preload="metadata" controlslist="nodownload" x-webkit-airplay="allow"></audio>
 
@@ -368,7 +394,8 @@ var AN=(function(){
     play:function(t,m){send("play",{t:t,m:m,ref:firstRef||undefined})},
     share:function(t){send("share",{t:t||undefined})},
     order:function(t){send("order",{t:t,ref:firstRef||undefined})},
-    install:function(){if(ls("az_inst"))return;ls("az_inst","1");send("install",{ref:firstRef||undefined,t:firstRef||undefined})},
+    install:function(){if(ls("az_inst"))return;ls("az_inst","1");send("install",{ref:firstRef||undefined,t:firstRef||undefined,m:ls("az_from_tg")==="1"?"tg":undefined})},
+    tgInstall:function(){send("tg_install",{t:cur&&cur.t?cur.t.id:undefined})},
     appOpen:function(){if(!sa)return;send("app_open");if(!ls("az_inst"))this.install()}
   };
 })();
@@ -804,17 +831,48 @@ var tt=0;function toast(m,ms){var t=$("toast");t.textContent=m;t.hidden=false;cl
 /* ---------- install as app (PWA) ---------- */
 var standalone=false;try{standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){}
 var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-var deferredPrompt=null;
+var isIPad=isIOS&&(/ipad/i.test(navigator.userAgent)||navigator.platform==="MacIntel");
+var isIOSSafari=isIOS&&/safari/i.test(navigator.userAgent)&&!/crios|fxios|edgios|opios/i.test(navigator.userAgent);
+var isAndroid=/android/i.test(navigator.userAgent);
+var deferredPrompt=null,fromTgInstall=false;
+try{var qs=new URLSearchParams(location.search);fromTgInstall=qs.get("install")==="1";if(fromTgInstall){lsSet("az_from_tg","1");history.replaceState(null,"",location.pathname+location.hash)}}catch(e){}
 if("serviceWorker" in navigator&&window.isSecureContext){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
-if(!inTg&&!standalone){
-  window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredPrompt=e;$("install").hidden=false});
-  if(isIOS)$("install").hidden=false;
+var SHARE_IOS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l4-4 4 4M12 3v13"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>',PLUS_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
+function igOpen(){
+  var body=$("ig-body"),go=$("ig-go"),ar=$("ig-arrow"),ig=$("ig");go.hidden=true;ar.hidden=true;ig.classList.remove("top");
+  if(inTg){
+    body.innerHTML='<p class="note" style="margin:0;font-size:14px;color:var(--muted)">Telegram ichida ilova o\'rnatib bo\'lmaydi. Tugmani bosing — sayt telefoningiz brauzerida ('+(isIOS?"Safari":"Chrome")+') ochiladi va o\'rnatish oynasi o\'zi chiqadi.</p>';
+    go.hidden=false;go.textContent=isIOS?"Safari'da ochish":"Brauzerda ochish";
+    go.onclick=function(){AN.tgInstall();var u=location.origin+location.pathname+"?install=1"+(cur.t?"#t-"+cur.t.id:"");
+      try{if(tg.openLink){tg.openLink(u,{try_instant_view:false});}else window.open(u,"_blank")}catch(e){window.open(u,"_blank")}
+      igClose();toast(isIOS?"Safari ochildi: pastdagi Ulashish belgisini bosing.":"Brauzer ochildi: «O'rnatish»ni bosing.",6000)};
+  }else if(deferredPrompt){
+    body.innerHTML='<ol><li>Pastdagi <b>O\'rnatish</b> tugmasini bosing</li><li>Chiqqan oynada yana <b>O\'rnatish</b> (Install) ni tasdiqlang</li></ol>';
+    go.hidden=false;go.textContent="O'rnatish";
+    go.onclick=function(){var dp=deferredPrompt;igClose();if(!dp)return;dp.prompt();dp.userChoice.then(function(){deferredPrompt=null;$("install").hidden=true})};
+  }else if(isIOS){
+    if(!isIOSSafari){body.innerHTML='<ol><li>Manzil satridagi <i>'+SHARE_IOS+'</i> <b>Ulashish</b> belgisini bosing</li><li><i>'+PLUS_IC+'</i> <b>Bosh ekranga qo\'shish</b> ni tanlang</li><li>O\'ng tepada <b>Qo\'shish</b> ni bosing</li></ol><p class="note" style="margin:0">Belgi ko\'rinmasa, sahifani <b>Safari</b>\'da oching.</p>';ig.classList.add("top");ar.hidden=false}
+    else{body.innerHTML='<ol><li>'+(isIPad?"Tepada o\'ngdagi":"Pastdagi")+' <i>'+SHARE_IOS+'</i> <b>Ulashish</b> belgisini bosing</li><li>Ro\'yxatni pastga suring va <i>'+PLUS_IC+'</i> <b>Bosh ekranga qo\'shish</b> ni tanlang</li><li>O\'ng tepada <b>Qo\'shish</b> ni bosing — tayyor!</li></ol>';if(isIPad)ig.classList.add("top");ar.hidden=false}
+  }else{
+    body.innerHTML='<ol><li>Brauzer menyusini oching: o\'ng tepadagi <b>⋮</b></li><li><b>Ilovani o\'rnatish</b> yoki <b>Bosh ekranga qo\'shish</b> ni tanlang</li><li><b>O\'rnatish</b> ni tasdiqlang</li></ol>';ig.classList.add("top");ar.hidden=!isAndroid;
+  }
+  ig.hidden=false;
 }
-window.addEventListener("appinstalled",function(){AN.install();$("install").hidden=true;deferredPrompt=null;toast("AZ MUSIC telefoningizga o'rnatildi.")});
+function igClose(){$("ig").hidden=true}
+$("ig-close").addEventListener("click",function(){igClose();lsSet("az_ig_no",String(Date.now()))});
+$("ig").addEventListener("click",function(e){if(e.target===this)igClose()});
+if(!standalone){
+  window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredPrompt=e;$("install").hidden=false;if(fromTgInstall&&!$("ig").hidden)igOpen()});
+  if(isIOS||inTg)$("install").hidden=false;
+  /* Telegram'dan «Brauzerda ochish» bilan kelganlarga yo'riqnoma darhol ko'rsatiladi */
+  if(fromTgInstall)setTimeout(igOpen,isAndroid?1800:600);
+  /* Telegram ichida: bir marta taklif (40 soniyadan keyin, qo'shiq ochiq bo'lmasa) */
+  else if(inTg&&!lsGet("az_ig_tg")){setTimeout(function(){if($("sheet").hidden&&$("ask").hidden&&$("ig").hidden){lsSet("az_ig_tg","1");igOpen()}},40000)}
+}
+window.addEventListener("appinstalled",function(){AN.install();$("install").hidden=true;deferredPrompt=null;igClose();toast("AZ MUSIC telefoningizga o'rnatildi.")});
 $("install").addEventListener("click",function(){
-  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;$("install").hidden=true});return}
-  if(isIOS){toast("Safari'da pastdagi «Ulashish» belgisini bosing va «Bosh ekranga qo'shish»ni tanlang.",9000);return}
-  toast("Brauzer menyusidan «Ilovani o'rnatish» yoki «Bosh ekranga qo'shish»ni tanlang.",7000);
+  if(deferredPrompt&&!inTg){deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;$("install").hidden=true});return}
+  igOpen();
 });
 
 AN.open();AN.appOpen();

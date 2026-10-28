@@ -21,7 +21,7 @@ async function handle({ request, env }) {
   const [tot, uniq, daily, tracks, refs, srcs, ccs, allTime] = await env.DB.batch([
     q("SELECT e, COUNT(*) n FROM ev WHERE day >= ? GROUP BY e", since),
     q(
-      "SELECT COUNT(DISTINCT vid) visitors, COUNT(DISTINCT CASE WHEN e IN ('install') THEN vid END) installs, COUNT(DISTINCT CASE WHEN e='install' AND ref IS NOT NULL THEN vid END) installs_ref, COUNT(DISTINCT CASE WHEN ref IS NOT NULL AND e='open' THEN vid END) via_link FROM ev WHERE day >= ?",
+      "SELECT COUNT(DISTINCT vid) visitors, COUNT(DISTINCT CASE WHEN e IN ('install') THEN vid END) installs, COUNT(DISTINCT CASE WHEN e='install' AND ref IS NOT NULL THEN vid END) installs_ref, COUNT(DISTINCT CASE WHEN e='install' AND m='tg' THEN vid END) installs_tg, COUNT(DISTINCT CASE WHEN e='tg_install' THEN vid END) tg_clicks, COUNT(DISTINCT CASE WHEN ref IS NOT NULL AND e='open' THEN vid END) via_link FROM ev WHERE day >= ?",
       since
     ),
     q(

@@ -219,7 +219,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v12</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v13</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -827,6 +827,7 @@ async function loadStats(){
   var k=[
     ["Tashrif buyuruvchilar",u.visitors,"noyob qurilma"],
     ["Ilovani o'rnatganlar",u.installs,"jami: "+nf(a.installs)+" ta"],
+    ["Telegram'dan o'rnatganlar",u.installs_tg,nf(u.tg_clicks)+" kishi «Brauzerda ochish»ni bosdi"],
     ["Havola orqali kelganlar",u.via_link,nf(u.installs_ref)+" tasi ilovani o'rnatdi"],
     ["Tinglashlar",c.play,"intro va to'liq"],
     ["Ulashishlar",c.share,"«Do'stga yuborish»"],
