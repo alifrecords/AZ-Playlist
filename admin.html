@@ -155,7 +155,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v3</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v4</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -322,16 +322,20 @@ function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
 async function gh(path,opt){
   opt=opt||{};
   var body=opt.body?JSON.stringify(opt.body):undefined,r=null,lastErr=null;
-  for(var tr=0;tr<3;tr++){
+  var tries=opt.tries||3;
+  for(var tr=0;tr<tries;tr++){
     try{
-      r=await fetch("https://api.github.com/repos/"+encodeURIComponent(CFG.owner)+"/"+encodeURIComponent(CFG.repo)+path,{
-        method:opt.method||"GET",
-        headers:Object.assign({"Authorization":"Bearer "+CFG.token,"Accept":opt.accept||"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},body?{"Content-Type":"application/json"}:{}),
-        body:body,cache:"no-store"
-      });
-      if(r.status>=500||r.status===429){lastErr=null;if(tr<2){if(opt.onRetry)opt.onRetry(tr+1);await wait(1500*(tr+1));continue}}
+      var ctl=new AbortController(),tmr=setTimeout(function(){ctl.abort()},opt.timeout||120000);
+      try{
+        r=await fetch("https://api.github.com/repos/"+encodeURIComponent(CFG.owner)+"/"+encodeURIComponent(CFG.repo)+path,{
+          method:opt.method||"GET",signal:ctl.signal,
+          headers:Object.assign({"Authorization":"Bearer "+CFG.token,"Accept":opt.accept||"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},body?{"Content-Type":"application/json"}:{}),
+          body:body,cache:"no-store"
+        });
+      }finally{clearTimeout(tmr)}
+      if(r.status>=500||r.status===429){lastErr=null;if(tr<tries-1){if(opt.onRetry)opt.onRetry(tr+1);await wait(2000*(tr+1));continue}}
       break;
-    }catch(e){r=null;lastErr=e;if(tr<2){if(opt.onRetry)opt.onRetry(tr+1);await wait(1500*(tr+1))}}
+    }catch(e){r=null;lastErr=e;if(tr<tries-1){if(opt.onRetry)opt.onRetry(tr+1);await wait(2000*(tr+1))}}
   }
   if(!r){var ne=new Error(NET_MSG);ne.status=0;ne.cause=lastErr;throw ne}
   if(!r.ok){
@@ -350,24 +354,64 @@ async function gh(path,opt){
   return r.status===204?null:r.json();
 }
 function b64FromBlob(blob){return new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){var s=String(fr.result);res(s.slice(s.indexOf(",")+1))};fr.onerror=rej;fr.readAsDataURL(blob)})}
+/* ---- Bo'laklab yuborish (AZ-Beats mexanizmi) ----
+   VPN, antivirus yoki provayder katta so'rovni uzsa, fayl mayda bo'laklarga bo'linadi:
+   avval 4 MB, uzilsa 2 MB → 1 MB → … 128 KB gacha. Ishlagan o'lcham eslab qolinadi.
+   Bo'laklar repoga <fayl>.part-001-of-005 nomi bilan tushadi, GitHub'dagi bot
+   (.github/workflows/join-parts.yml) ularni bir daqiqa ichida asl faylga yig'adi. */
+var CHUNK_MAX=4*1048576,CHUNK_MIN=128*1024;
+function chunkGet(){try{var v=+localStorage.getItem("az_chunk");if(v>=CHUNK_MIN&&v<=CHUNK_MAX)return v}catch(e){}return CHUNK_MAX}
+function chunkSet(v){try{localStorage.setItem("az_chunk",String(v))}catch(e){}}
+function isNetErr(e){return e&&(e.status===0||e.status===400||e.status===408||e.status===413)}
+async function putBlob(blob,log){
+  return (await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(blob),encoding:"base64"},tries:3,onRetry:function(n){log("  ulanish uzildi, qayta urinish "+n+"/2…")}})).sha;
+}
+async function putFileRobust(path,blob,log,onPart){
+  var chunk=chunkGet();
+  for(;;){
+    try{
+      if(blob.size<=chunk){var sha=await putBlob(blob,log);if(onPart)onPart(1,1);return [{path:path,sha:sha}]}
+      var n=Math.ceil(blob.size/chunk),pad=function(x){return String(x).padStart(3,"0")},out=[];
+      log("  "+n+" bo'lakda yuborilmoqda ("+Math.round(chunk/1024)+" KB)");
+      for(var i=0;i<n;i++){
+        var sh=await putBlob(blob.slice(i*chunk,Math.min(blob.size,(i+1)*chunk)),log);
+        out.push({path:path+".part-"+pad(i+1)+"-of-"+pad(n),sha:sh});
+        if(onPart)onPart(i+1,n);
+      }
+      return out;
+    }catch(e){
+      if(!isNetErr(e)||chunk<=CHUNK_MIN)throw e;
+      chunk=Math.max(CHUNK_MIN,chunk>>1);chunkSet(chunk);
+      log("  tarmoq so'rovni uzdi — kichikroq bo'laklarga o'tilmoqda ("+Math.round(chunk/1024)+" KB)");
+    }
+  }
+}
 async function commitFiles(files,message,onLog){
   var log=onLog||function(){};
   var ref=await gh("/git/ref/heads/"+encodeURIComponent(CFG.branch));
   var base=ref.object.sha;
   var bc=await gh("/git/commits/"+base);
-  var tree=[];
+  var tree=[],anyParts=false;
   for(var i=0;i<files.length;i++){
     var f=files[i];
     if(f.data===null){tree.push({path:f.path,mode:"100644",type:"blob",sha:null});log("o'chiriladi: "+f.path);continue}
     var blob=typeof f.data==="string"?new Blob([f.data],{type:"application/json"}):f.data;
     log("yuklanmoqda ("+(i+1)+"/"+files.length+"): "+f.path+" · "+(blob.size/1048576).toFixed(2)+" MB");
-    var b=await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(blob),encoding:"base64"},onRetry:function(n){log("  ulanish uzildi, qayta urinish "+n+"/2…")}});
-    tree.push({path:f.path,mode:"100644",type:"blob",sha:b.sha});
+    var parts=await putFileRobust(f.path,blob,log,function(k,n){if(n>1)try{$("ed-hint").textContent="Yuborilmoqda: "+(i+1)+"/"+files.length+" fayl · "+k+"/"+n+" bo'lak"}catch(_){}});
+    if(parts.length>1){anyParts=true;tree.push({path:f.path,mode:"100644",type:"blob",sha:null,_drop:true})}
+    parts.forEach(function(pt){tree.push({path:pt.path,mode:"100644",type:"blob",sha:pt.sha})});
   }
+  var drops=tree.filter(function(x){return x._drop});
+  if(drops.length){
+    var bt=null;try{bt=await gh("/git/trees/"+bc.tree.sha+"?recursive=1")}catch(e){}
+    var have={};((bt&&bt.tree)||[]).forEach(function(x){have[x.path]=1});
+    tree=tree.filter(function(x){return !x._drop||have[x.path]});
+  }
+  tree.forEach(function(x){delete x._drop});
   var nt=await gh("/git/trees",{method:"POST",body:{base_tree:bc.tree.sha,tree:tree}});
   var cm=await gh("/git/commits",{method:"POST",body:{message:message,tree:nt.sha,parents:[base]}});
   await gh("/git/refs/heads/"+encodeURIComponent(CFG.branch),{method:"PATCH",body:{sha:cm.sha}});
-  log("commit: "+cm.sha.slice(0,7)+" · tayyor");
+  log("commit: "+cm.sha.slice(0,7)+" · tayyor"+(anyParts?" (bo'laklarni GitHub boti ~1 daqiqada yig'adi)":""));
   return cm.sha;
 }
 async function readRepoFile(path){
@@ -435,9 +479,15 @@ $("nettest").addEventListener("click",async function(){
   try{
     var t0=performance.now();await gh("");res.push("✓ GitHub'ga ulanish bor ("+Math.round(performance.now()-t0)+" ms)");
     t0=performance.now();await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(rnd(1024)),encoding:"base64"}});res.push("✓ Kichik fayl yuborildi");
-    t0=performance.now();await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(rnd(4*1048576)),encoding:"base64"}});
-    var sec=(performance.now()-t0)/1000;res.push("✓ 4 MB sinov fayli yuborildi ("+sec.toFixed(1)+" s, ≈"+(32/sec).toFixed(1)+" Mbit/s)");
-    res.push("Hammasi joyida: bu kompyuterdan yuklash mumkin.");
+    var sizes=[256*1024,1048576,2*1048576,4*1048576],best=0;
+    for(var z=0;z<sizes.length;z++){
+      t0=performance.now();
+      try{await gh("/git/blobs",{method:"POST",tries:1,timeout:60000,body:{content:await b64FromBlob(rnd(sizes[z])),encoding:"base64"}});
+        var sec=(performance.now()-t0)/1000;best=sizes[z];res.push("✓ "+Math.round(sizes[z]/1024)+" KB yuborildi ("+sec.toFixed(1)+" s)");}
+      catch(e){res.push("✗ "+Math.round(sizes[z]/1024)+" KB o'tmadi — tarmoq katta so'rovni uzyapti");break}
+    }
+    if(best){chunkSet(Math.max(CHUNK_MIN,best));res.push("Bo'lak o'lchami: "+Math.round(chunkGet()/1024)+" KB. Katta fayllar shunday bo'laklarda yuboriladi — yuklash ishlaydi.")}
+    else res.push("Hatto 256 KB ham o'tmadi. VPN'ni almashtiring yoki boshqa internetga ulaning.");
   }catch(e){res.push("✗ "+e.message+(e.cause?" ["+e.cause.name+": "+e.cause.message+"]":""));}
   b.disabled=false;b.textContent="Ulanishni tekshirish";
   openModal('<h2 id="m-title">Ulanish tekshiruvi</h2><pre class="log" style="white-space:pre-wrap">'+esc(res.join("\n"))+'</pre><div style="display:flex;justify-content:flex-end"><button class="btn primary" type="button" data-close>Yopish</button></div>');

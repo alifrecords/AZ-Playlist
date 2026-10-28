@@ -1,0 +1,49 @@
+name: Bo'laklarni yig'ish
+
+# Admin VPN/antivirus orqali katta faylni bo'laklab yuborganda ishlaydi:
+# music/ va media/ dagi *.part-NNN-of-NNN fayllarni asl faylga birlashtiradi.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "music/**"
+      - "media/**"
+  workflow_dispatch:
+
+concurrency:
+  group: join-parts
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  join:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bo'laklar bormi?
+        id: check
+        run: |
+          if find music media -name '*.part-*-of-*' 2>/dev/null | grep -q .; then echo "found=1" >> "$GITHUB_OUTPUT"; else echo "Bo'lak yo'q"; fi
+
+      - name: Yig'ish
+        if: steps.check.outputs.found == '1'
+        run: python3 tools/join_parts.py
+
+      - name: Commit
+        if: steps.check.outputs.found == '1'
+        run: |
+          git config user.name "AZ MUSIC bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A music media
+          if git diff --cached --quiet; then
+            echo "O'zgarish yo'q"
+          else
+            git commit -m "Bo'laklardan yig'ildi"
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              sleep 5
+            done
+          fi
