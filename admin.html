@@ -92,6 +92,7 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .bnr-prev{border:1px dashed var(--line);border-radius:12px;min-height:200px;display:grid;place-items:center;overflow:hidden;background:var(--bg)}
 .bnr-prev video{width:100%;display:block;max-height:390px;object-fit:contain;background:#000}
 .bnr-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sbx summary{cursor:pointer;font-weight:700;padding:6px 0}
 .tgbox{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:14px;color:var(--muted)}
 .tgbox b{color:var(--fg)}
 .acm{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
@@ -218,7 +219,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v11</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v12</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -281,6 +282,23 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
     </div>
     <div class="tgbox" id="tg-box"></div>
     <div id="cm-body"><p class="note">Yuklanmoqda…</p></div>
+  </section>
+
+  <section class="card" id="subs" hidden>
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><h2>Obunachilar</h2><p class="note" style="margin:4px 0 0">Yangi qo'shiq xabarini olishga rozi bo'lgan tinglovchilar</p></div>
+      <button class="btn sm" type="button" id="sb-reload">Yangilash</button>
+    </div>
+    <div class="kpis" id="sb-kpis"></div>
+    <div id="sb-run" class="tgbox" hidden></div>
+    <details class="sbx"><summary>✍️ O'z matningiz bilan xabar yuborish</summary>
+      <div class="grid2" style="margin-top:12px">
+        <label class="f"><span>Sarlavha</span><input class="field" id="sb-title" maxlength="80" placeholder="Masalan: 🔥 Bugun yangi hit!"></label>
+        <label class="f"><span>Bosilganda ochiladigan qo'shiq (ixtiyoriy)</span><select class="field" id="sb-track"><option value="">— asosiy sahifa —</option></select></label>
+      </div>
+      <label class="f" style="margin-top:10px"><span>Matn</span><textarea class="field" id="sb-body" maxlength="180" rows="2" placeholder="Qisqa matn (180 belgigacha)"></textarea></label>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn primary" type="button" id="sb-send">Hammaga yuborish</button><span class="note">Xabarni ko'p yubormang — haftasiga 1–3 marta yetarli, aks holda obunachilar o'chirib qo'yadi.</span></div>
+    </details>
   </section>
 
   <section class="card" id="materials" hidden>
@@ -355,6 +373,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
         </div>
         <div class="f" id="q-wrap" hidden><label for="e-kbps">Saytga chiqadigan MP3 sifati</label><select class="field" id="e-kbps"></select><span class="note" id="q-est"></span></div>
         <div id="report"></div>
+        <label class="check" id="e-notify-w"><input type="checkbox" id="e-notify"><span><b>📣 Obunachilarga xabar yuborish</b> — sayt yangilangach, telefon va Telegram obunachilariga «Yangi qo'shiq» xabari ketadi. <span class="note" id="e-notify-n"></span></span></label>
         <label class="check"><input type="checkbox" id="e-own"><span><b>Bu asarning muallifi va huquq egasi menman.</b> Asar mualliflik huquqi bilan himoyalangan holda joylanadi.</span></label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" type="button" id="ed-save" disabled>GitHub'ga joylash</button><span class="note" id="ed-hint"></span></div>
         <pre class="log" id="log" hidden></pre>
@@ -562,7 +581,7 @@ async function connect(){
     await loadPlaylist();
     $("conn-form").hidden=true;$("conn-ok").hidden=false;$("conn-edit").hidden=false;$("conn-repo").textContent=CFG.owner+"/"+CFG.repo+" · "+CFG.branch;
     $("conn-state").textContent="Ulangan";$("conn-state").className="tag ok";
-    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;$("cmts").hidden=false;clearInterval(tick);$("gh-msg").textContent="";loadStats();loadComments();loadTg();
+    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;$("cmts").hidden=false;$("subs").hidden=false;clearInterval(tick);$("gh-msg").textContent="";loadStats();loadComments();loadTg();loadSubs();
   }catch(e){clearInterval(tick);$("gh-msg").textContent=e.status===0?"GitHub'ga ulanib bo'lmadi: internet yoki VPN'ni tekshiring (VPN yoqilgan bo'lsa — o'chirib, o'chiq bo'lsa — yoqib ko'ring), keyin «Ulanish»ni qayta bosing.":e.message;$("conn-state").textContent="Ulanmagan";$("conn-state").className="tag mute"}
 }
 $("gh-connect").addEventListener("click",function(){
@@ -650,6 +669,55 @@ function checkContact(){
   else txt="⚠ Nik noto'g'ri: faqat lotin harflari, raqam va _ (4–32 belgi).";
   h.textContent=txt;h.style.color=ok?"var(--ok, #8FD9A8)":"var(--bad, #FF9B8A)";
 }
+/* ================= obunachilar va xabar yuborish ================= */
+var NTF={total:null,busy:false};
+async function loadSubs(){
+  var sel=$("sb-track"),v=sel.value;sel.innerHTML='<option value="">— asosiy sahifa —</option>'+(DATA.tracks||[]).map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.title)+'</option>'}).join("");sel.value=v;
+  try{var j=await api("api/admin/notify");NTF.total=(j.push||0)+(j.bot?(j.tg||0):0);
+    $("sb-kpis").innerHTML='<div class="kpi"><span>Telefon bildirishnomasi</span><b>'+nf(j.push)+'</b><i>ilovani o\'rnatib ruxsat berganlar</i></div>'+
+      '<div class="kpi"><span>Telegram obunachilari</span><b>'+(j.bot?nf(j.tg):"—")+'</b><i>'+(j.bot?"bot orqali xabar oladi":"BOT_TOKEN sozlanmagan")+'</i></div>'+
+      '<div class="kpi"><span>Oxirgi xabar</span><b style="font-size:16px;line-height:1.3">'+(j.last?esc(j.last.title):"—")+'</b><i>'+(j.last?ago(j.last.ts):"hali yuborilmagan")+'</i></div>';
+  }catch(e){$("sb-kpis").innerHTML=e.code==="nodb"||e.code==="nofn"?setupHTML(e.code==="nodb"?"nodb":"nofn"):'<p class="note">Yuklanmadi: '+esc(e.message)+'</p>'}
+}
+$("sb-reload").addEventListener("click",loadSubs);
+$("sb-send").addEventListener("click",function(){
+  var title=$("sb-title").value.trim(),body=$("sb-body").value.trim(),tr=$("sb-track").value;
+  if(!title){toast("Sarlavha yozing.");$("sb-title").focus();return}
+  openModal('<h2 id="m-title">Xabar yuborilsinmi?</h2><div class="acm"><b>'+esc(title)+'</b><p>'+esc(body)+'</p></div><p class="note" style="margin:0">'+(NTF.total!=null?NTF.total+" ta obunachiga":"Barcha obunachilarga")+' yuboriladi. Qaytarib bo\'lmaydi.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" id="sb-ok">Yuborish</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
+  $("sb-ok").onclick=function(){closeModal();var t=tr&&(DATA.tracks||[]).filter(function(x){return x.id===tr})[0];notifyFlow({track:tr,title:title,body:body,image:t?((t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""):""},false)};
+});
+/* sayt yangilanishini kutadi (yangi qo'shiq jonli saytda paydo bo'lguncha), keyin partiyalab yuboradi */
+async function notifyFlow(n,waitLive){
+  if(NTF.busy){toast("Oldingi xabar hali yuborilmoqda.");return}
+  NTF.busy=true;var box=$("sb-run");box.hidden=false;var say=function(h){box.innerHTML='<span>📣 '+h+'</span>'};
+  try{
+    if(waitLive&&n.track){
+      say("Sayt yangilanishi kutilmoqda, so'ng obunachilarga xabar ketadi… (sahifani yopmang)");
+      var t0=Date.now(),live=false;
+      while(Date.now()-t0<5*60*1000){
+        try{var r=await fetch("playlist.json?t="+Date.now(),{cache:"no-store"});var pj=await r.json();if((pj.tracks||[]).some(function(x){return x.id===n.track})){live=true;break}}catch(e){}
+        say("Sayt yangilanishi kutilmoqda… "+Math.round((Date.now()-t0)/1000)+" s (sahifani yopmang)");
+        await wait(8000);
+      }
+      if(!live)say("Sayt 5 daqiqada yangilanmadi — xabar baribir yuborilmoqda…");
+      await wait(15000); /* Cloudflare keshi hamma joyda yangilanishi uchun */
+    }
+    var st=await api("api/admin/notify",{method:"POST",body:Object.assign({action:"start"},n)});
+    var tot={sent:0,failed:0,removed:0};
+    for(var kind of ["push","tg"]){
+      var after=0,guardN=0;
+      while(guardN++<500){
+        say("Yuborilmoqda: "+(kind==="push"?"telefonlarga":"Telegram'ga")+" · "+tot.sent+" ta yetkazildi");
+        var r2=await api("api/admin/notify",{method:"POST",body:{action:"send",kind:kind,after:after}});
+        tot.sent+=r2.sent;tot.failed+=r2.failed;tot.removed+=r2.removed;after=r2.next;if(r2.done)break;
+      }
+    }
+    say("<b>Yuborildi:</b> "+tot.sent+" ta obunachiga"+(tot.removed?" · "+tot.removed+" ta eskirgan obuna o'chirildi":"")+(tot.failed?" · "+tot.failed+" ta yetkazilmadi":""));
+    toast("Xabar "+tot.sent+" ta obunachiga yuborildi.",5000);loadSubs();
+  }catch(e){say("Xabar yuborilmadi: "+esc(e.message));toast("Xabar yuborilmadi: "+e.message,6000)}
+  NTF.busy=false;
+}
+
 /* ================= izohlar ================= */
 async function api(path,opt){
   opt=opt||{};var r=await fetch(path,{method:opt.method||"GET",headers:{Authorization:"Bearer "+CFG.token,"Content-Type":"application/json"},body:opt.body?JSON.stringify(opt.body):undefined,cache:"no-store"});
@@ -952,7 +1020,7 @@ function openEditor(t,replace){
   $(t&&t.introOnly?"k-intro":"k-full").checked=true;
   $("mkintro").checked=!t||!!t.intro;$("u-fin").value=E.fin;$("u-fout").value=E.fout;
   ["c-bpm","c-key","c-genre"].forEach(function(i){$(i).hidden=true});["a-bpm","a-key","a-genre"].forEach(function(i){$(i).innerHTML=""});
-  $("e-own").checked=false;$("file").value="";$("introbox").hidden=true;$("q-wrap").hidden=true;$("report").innerHTML="";$("nobuf").hidden=false;$("log").hidden=true;$("log").textContent="";
+  $("e-own").checked=false;$("e-notify").checked=!t||!!replace;$("e-notify-n").textContent=NTF.total!=null?"("+NTF.total+" ta obunachi)":"";$("file").value="";$("introbox").hidden=true;$("q-wrap").hidden=true;$("report").innerHTML="";$("nobuf").hidden=false;$("log").hidden=true;$("log").textContent="";
   $("drop").hidden=!!(t&&!replace);$("load-existing").hidden=!(t&&!replace);
   renderMgrid();updateSave();
   $("editor").hidden=false;$("editor").scrollIntoView({behavior:"smooth"});
@@ -1372,6 +1440,7 @@ $("ed-save").addEventListener("click",async function(){
     await commitFiles(files,(o?(E.replace?"Almashtirildi: ":"Tahrirlandi: "):"Qo'shildi: ")+t.title,logLine);
     SAVED=pjson();markDirty();renderList();
     toast(o?"Saqlandi. Sayt 1–2 daqiqada yangilanadi.":"\""+t.title+"\" joylandi. Sayt 1–2 daqiqada yangilanadi.",4500);
+    if($("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""},true)},300)}
     E.slides.forEach(function(x){if(x.k==="new")URL.revokeObjectURL(x.url)});
     closeEditor();
   }catch(e){

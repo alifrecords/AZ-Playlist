@@ -21,6 +21,8 @@ export async function ensureSchema(db) {
     ),
     db.prepare("CREATE INDEX IF NOT EXISTS comments_track ON comments(track, ts)"),
     db.prepare("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, p256dh TEXT, auth TEXT, vid TEXT, ts INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS tg_subs (uid INTEGER PRIMARY KEY, name TEXT, ts INTEGER NOT NULL)"),
   ]);
   ready = true;
 }
@@ -114,4 +116,30 @@ export async function kvGet(db, k) {
 }
 export async function kvSet(db, k, v) {
   await db.prepare("INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(k, v).run();
+}
+
+/* ---- Web Push (VAPID, RFC 8292) ----
+   Kalitlar birinchi chaqiruvda yaratiladi va D1 (kv) da saqlanadi — qo'shimcha sozlash kerak emas.
+   Xabarlar "bo'sh" yuboriladi: telefon xabarni oladi va matnni /api/push/latest dan o'qiydi
+   (shifrlash kerak bo'lmaydi, server tez ishlaydi). */
+export const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const b64uText = (s) => b64u(new TextEncoder().encode(s));
+export async function vapidKeys(db) {
+  let jwk = await kvGet(db, "vapid_private"), pub = await kvGet(db, "vapid_public");
+  if (!jwk || !pub) {
+    const kp = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+    jwk = JSON.stringify(await crypto.subtle.exportKey("jwk", kp.privateKey));
+    pub = b64u(await crypto.subtle.exportKey("raw", kp.publicKey));
+    await kvSet(db, "vapid_private", jwk);
+    await kvSet(db, "vapid_public", pub);
+  }
+  const key = await crypto.subtle.importKey("jwk", JSON.parse(jwk), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  return { key, pub };
+}
+export async function vapidAuth(keys, endpoint, subject) {
+  const aud = new URL(endpoint).origin;
+  const head = b64uText(JSON.stringify({ typ: "JWT", alg: "ES256" }));
+  const body = b64uText(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: subject }));
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, keys.key, new TextEncoder().encode(head + "." + body));
+  return "vapid t=" + head + "." + body + "." + b64u(sig) + ", k=" + keys.pub;
 }
