@@ -352,6 +352,9 @@ async function load(){
   if(nf===0&&ni>0&&TAB==="full"){TAB="intro";$("tab-full").setAttribute("aria-selected","false");$("tab-intro").setAttribute("aria-selected","true")}
   renderBanner();renderFeatured();renderChips();renderList();deepLink();
 }
+/* kesilgan slayd videolar: faqat data-s … data-e qismi aylanadi (admin → ✂ Kesish) */
+document.addEventListener("loadedmetadata",function(ev){var v=ev.target;if(!v||v.tagName!=="VIDEO"||!v.hasAttribute("data-s"))return;var s0=parseFloat(v.getAttribute("data-s"))||0;if(s0>0)try{v.currentTime=s0}catch(e){}},true);
+document.addEventListener("timeupdate",function(ev){var v=ev.target;if(!v||v.tagName!=="VIDEO"||!v.hasAttribute("data-s"))return;var s0=parseFloat(v.getAttribute("data-s"))||0,e0=parseFloat(v.getAttribute("data-e"))||0;if(e0>s0&&v.currentTime>=e0-0.05)v.currentTime=s0},true);
 /* ---------- banner video (admin → Sozlamalar → Banner video) ---------- */
 var BNR_ICON={off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>',on:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>'};
 function renderBanner(){
@@ -391,14 +394,14 @@ function coverHTML(t){return '<div class="cover" style="--h:'+hueOf(t.id)+'"><sp
 function thumbHTML(t,eq){
   var m=t.media&&t.media[0],inner;
   if(m&&m.type==="image")inner='<img src="'+esc(m.src)+'" alt="" loading="lazy">';
-  else if(m&&m.type==="video")inner='<video src="'+esc(m.src)+'" muted playsinline preload="metadata"></video>';
+  else if(m&&m.type==="video")inner='<video src="'+esc(m.src)+'"'+((m.start>0||m.end)?' data-s="'+(+m.start||0)+'" data-e="'+(+m.end||0)+'"':'')+' muted playsinline preload="metadata"></video>';
   else inner='<span class="mini" style="--h:'+hueOf(t.id)+'">AZ</span>';
   return '<span class="thumb">'+inner+(eq?'<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>':'')+'</span>';
 }
 function carHTML(t){
   var sl=t.media&&t.media.length?t.media:[{type:"cover"}],n=sl.length;
   var s=sl.map(function(m,i){
-    var inner=m.type==="image"?'<img src="'+esc(m.src)+'" alt="'+esc(t.title)+': '+(i+1)+'-slayd" draggable="false"'+(i?' loading="lazy"':'')+'>':m.type==="video"?'<video src="'+esc(m.src)+'" muted loop playsinline '+(i===0?"autoplay":"")+' preload="metadata" aria-label="'+esc(t.title)+' video"></video>':coverHTML(t);
+    var inner=m.type==="image"?'<img src="'+esc(m.src)+'" alt="'+esc(t.title)+': '+(i+1)+'-slayd" draggable="false"'+(i?' loading="lazy"':'')+'>':m.type==="video"?'<video src="'+esc(m.src)+'"'+((m.start>0||m.end)?' data-s="'+(+m.start||0)+'" data-e="'+(+m.end||0)+'"':'')+' muted loop playsinline '+(i===0?"autoplay":"")+' preload="metadata" aria-label="'+esc(t.title)+' video"></video>':coverHTML(t);
     return '<div class="car-s">'+inner+'</div>';
   }).join("");
   var chev=function(d){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+d+'"/></svg>'};

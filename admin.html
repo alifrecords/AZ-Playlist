@@ -176,6 +176,23 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 .mth img,.mth video{width:100%;height:100%;object-fit:cover;display:block}
 .mth .mi{position:absolute;left:5px;top:5px;font:600 11px var(--mono);background:rgba(0,0,0,.6);color:#fff;border-radius:4px;padding:1px 5px}
 .mth .mops{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:4px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.mth .mtrim{position:absolute;right:5px;top:5px;min-width:32px;height:28px;padding:0 8px;border-radius:14px;border:0;background:var(--accent);color:var(--accent-ink);font:700 12px var(--body);cursor:pointer;display:flex;align-items:center;gap:4px}
+.mth .mseg{position:absolute;left:5px;bottom:40px;font:600 10.5px var(--mono);background:rgba(0,0,0,.7);color:#fff;border-radius:4px;padding:1px 5px}
+.modal.wide{max-width:780px}
+.trim-v{background:#000;border-radius:12px;overflow:hidden;display:grid;place-items:center;max-height:46vh}
+.trim-v video{max-width:100%;max-height:46vh;display:block}
+.strip{position:relative;height:64px;border-radius:10px;overflow:hidden;background:var(--bg);border:1px solid var(--line);touch-action:none;cursor:pointer;user-select:none}
+.strip .thumbs{position:absolute;inset:0;display:flex}
+.strip .thumbs canvas{flex:1 1 0;width:0;min-width:0;height:100%;object-fit:cover;opacity:.9}
+.strip .shade{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.66);pointer-events:none}
+.strip .sel{position:absolute;top:0;bottom:0;border:3px solid var(--accent);border-radius:8px;pointer-events:none;box-sizing:border-box}
+.strip .hd{position:absolute;top:0;bottom:0;width:22px;margin-left:-11px;display:grid;place-items:center;pointer-events:none}
+.strip .hd i{width:8px;height:34px;border-radius:4px;background:var(--accent);box-shadow:0 0 0 2px rgba(0,0,0,.5)}
+.strip .ph{position:absolute;top:-2px;bottom:-2px;width:2px;background:#fff;pointer-events:none;box-shadow:0 0 4px #000}
+.trow{display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:10px;align-items:center}
+.trow input[type=range]{width:100%;accent-color:var(--accent)}
+.trow b{font:500 13px var(--mono);text-align:right}
+.tbar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}.tbar i{display:block;height:100%;width:0;background:var(--accent)}
 .mth .mops button{width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-weight:700;display:grid;place-items:center}
 .log{margin:0;padding:12px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font:500 12.5px/1.7 var(--mono);color:var(--muted);max-height:220px;overflow:auto;white-space:pre-wrap}
 .scrim{position:fixed;inset:0;z-index:50;background:rgba(8,7,6,.8);display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:48px 16px}
@@ -188,7 +205,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v7</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v8</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -282,8 +299,8 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
           <div class="trimhead"><span>Vizual slaydlar: rasm, video yoki GIF</span><span class="tag mute mono" id="media-count">0 / 4</span></div>
           <div class="mgrid" id="mgrid"></div>
           <button type="button" class="btn sm" id="madd" style="align-self:flex-start">+ Rasm, video yoki GIF qo'shish</button>
-          <input id="mfile" type="file" accept="image/*,video/mp4,video/webm" multiple hidden>
-          <p class="note" style="margin:0">Birinchi slayd muqova. 4:5 format (1080×1350), har bir fayl 25 MB gacha. Video saytda ovozsiz aylanadi.</p>
+          <input id="mfile" type="file" accept="image/*,video/mp4,video/webm,video/quicktime,.mov" multiple hidden>
+          <p class="note" style="margin:0">Birinchi slayd muqova. 4:5 format (1080×1350), har bir fayl 25 MB gacha. Video qo'shilganda kesish oynasi ochiladi; keyin ham «✂ Kesish» bilan o'zgartirish mumkin. Video saytda ovozsiz aylanadi.</p>
         </div>
       </div>
 
@@ -729,9 +746,10 @@ function askDelete(t){
   });
 }
 function openModal(h){$("modal").innerHTML=h;$("scrim").hidden=false;var f=$("modal").querySelector("button");if(f)f.focus()}
-function closeModal(){$("scrim").hidden=true;$("modal").innerHTML=""}
-$("scrim").addEventListener("click",function(e){if(e.target===this||e.target.closest("[data-close]"))closeModal()});
-document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("scrim").hidden)closeModal()});
+var MODAL_CB=null;
+function closeModal(){$("scrim").hidden=true;$("modal").innerHTML="";$("modal").classList.remove("wide");if(MODAL_CB){var c=MODAL_CB;MODAL_CB=null;c()}}
+$("scrim").addEventListener("click",function(e){if(this.dataset.lock==="1")return;if(e.target===this||e.target.closest("[data-close]"))closeModal()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("scrim").hidden&&$("scrim").dataset.lock!=="1")closeModal()});
 
 /* ================= audio analysis ================= */
 var ctx=null,master=null;
@@ -1024,7 +1042,8 @@ function renderMgrid(){
   if(!E)return;var all=E.slides;
   $("media-count").textContent=all.length+" / "+MAXM;$("madd").disabled=all.length>=MAXM;
   $("mgrid").innerHTML=all.map(function(x,i){
-    var inner=x.m.type==="video"?'<video src="'+esc(x.url)+'" muted playsinline loop autoplay preload="metadata"></video>':'<img src="'+esc(x.url)+'" alt="'+(i+1)+'-slayd" onerror="this.style.opacity=0">';
+    var sg=x.m.type==="video"&&(x.m.start>0||x.m.end)?'<span class="mseg">'+fmt1(x.m.start||0)+'–'+(x.m.end?fmt1(x.m.end):"oxiri")+'</span>':"";
+    var inner=x.m.type==="video"?'<video src="'+esc(x.url)+'" muted playsinline loop autoplay preload="metadata"'+(x.m.start>0||x.m.end?' data-s="'+(x.m.start||0)+'" data-e="'+(x.m.end||0)+'"':'')+'></video><button type="button" class="mtrim" data-mt="'+i+'" aria-label="'+(i+1)+'-videoni kesish">✂ Kesish</button>'+sg:'<img src="'+esc(x.url)+'" alt="'+(i+1)+'-slayd" onerror="this.style.opacity=0">';
     return '<div class="mth">'+inner+'<span class="mi">'+(i+1)+(i===0?" · muqova":"")+'</span><div class="mops"><button type="button" data-mm="'+i+',-1" aria-label="'+(i+1)+'-slaydni chapga">‹</button><button type="button" data-md="'+i+'" aria-label="'+(i+1)+'-slaydni olib tashlash">×</button><button type="button" data-mm="'+i+',1" aria-label="'+(i+1)+'-slaydni o\'ngga">›</button></div></div>';
   }).join("");
 }
@@ -1045,15 +1064,138 @@ function toJpeg(f){
   });
 }
 $("mfile").addEventListener("change",function(){var fs=[].slice.call(this.files||[]);this.value="";addSlides(fs)});
+/* ================= video kesish ================= */
+var TRIM_SRC_MAX=400*1048576;
+function pickRecMime(){
+  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)return null;
+  var c=["video/mp4;codecs=avc1.640028","video/mp4;codecs=avc1.4d0028","video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
+  for(var i=0;i<c.length;i++){try{if(MediaRecorder.isTypeSupported(c[i]))return c[i]}catch(e){}}return null;
+}
+function once(el,ev){return new Promise(function(res,rej){function ok(){cl();res()}function er(){cl();rej(new Error(ev))}function cl(){el.removeEventListener(ev,ok);el.removeEventListener("error",er)}el.addEventListener(ev,ok);el.addEventListener("error",er)})}
+async function seekTo(v,t){if(Math.abs(v.currentTime-t)<0.01&&v.readyState>=2)return;var p=once(v,"seeked");v.currentTime=t;await p}
+/* Tanlangan qismni real vaqtda qayta yozib, yangi qisqa fayl yasaydi (ovozsiz: saytda slaydlar ovozsiz aylanadi) */
+async function recordSegment(url,start,end,onProg){
+  var mime=pickRecMime();if(!mime)throw new Error("Bu brauzer videoni kesib saqlay olmaydi. Chrome yoki Edge'ning yangi versiyasida oching.");
+  var v=document.createElement("video");v.muted=true;v.playsInline=true;v.preload="auto";v.src=url;
+  if(v.readyState<1)await once(v,"loadedmetadata");
+  var vw=v.videoWidth||1080,vh=v.videoHeight||1920,k=Math.min(1,1280/Math.max(vw,vh)),cw=Math.round(vw*k/2)*2,chh=Math.round(vh*k/2)*2;
+  var c=document.createElement("canvas");c.width=cw;c.height=chh;var g=c.getContext("2d");
+  await seekTo(v,start);g.drawImage(v,0,0,cw,chh);
+  var st=c.captureStream(30),chunks=[],rec=new MediaRecorder(st,{mimeType:mime,videoBitsPerSecond:cw*chh>=1e6?6e6:4e6});
+  rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+  var stopped=new Promise(function(r){rec.onstop=r});
+  rec.start(250);
+  await new Promise(function(res,rej){
+    var done=false;
+    function fin(){if(done)return;done=true;try{v.pause()}catch(e){}res()}
+    function tick(){if(done)return;g.drawImage(v,0,0,cw,chh);var t=v.currentTime;if(onProg)onProg(clamp01((t-start)/Math.max(.1,end-start)));
+      if(t>=end-0.02||v.ended){fin();return}
+      if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(tick);else requestAnimationFrame(tick)}
+    v.addEventListener("ended",fin);
+    var pr=v.play();if(pr&&pr.catch)pr.catch(rej);
+    if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(tick);else requestAnimationFrame(tick);
+    setTimeout(fin,(end-start)*1000+15000);
+  });
+  rec.stop();await stopped;st.getTracks().forEach(function(t){t.stop()});
+  var type=mime.split(";")[0];return new File([new Blob(chunks,{type:type})],"kesilgan."+(/mp4/.test(type)?"mp4":"webm"),{type:type});
+}
+/* data-s / data-e bo'lgan videolar faqat shu qismni aylantiradi */
+document.addEventListener("loadedmetadata",function(ev){var v=ev.target;if(!v||v.tagName!=="VIDEO"||!v.hasAttribute("data-s"))return;var s0=parseFloat(v.getAttribute("data-s"))||0;if(s0>0)try{v.currentTime=s0}catch(e){}},true);
+document.addEventListener("timeupdate",function(ev){var v=ev.target;if(!v||v.tagName!=="VIDEO"||!v.hasAttribute("data-s"))return;var s0=parseFloat(v.getAttribute("data-s"))||0,e0=parseFloat(v.getAttribute("data-e"))||0;if(e0>s0&&v.currentTime>=e0-0.05){v.currentTime=s0}},true);
+function clamp01(x){return x<0?0:x>1?1:x}
+function fmt1(t){t=Math.max(0,t||0);var m=Math.floor(t/60),s=t-m*60;return m+":"+(s<10?"0":"")+s.toFixed(1)}
+/* Kesish oynasi. opt: {url, start, end, canEncode, mustEncode}. Natija: null (bekor) yoki {start,end,file} */
+function openTrimmer(opt){
+  return new Promise(function(resolve){
+    var mime=pickRecMime(),canEnc=!!(opt.canEncode&&mime);
+    openModal('<h2 id="m-title">Videoni kesish</h2>'+
+      '<div class="trim-v"><video id="tr-v" playsinline muted preload="auto"></video></div>'+
+      '<div class="strip" id="tr-strip" aria-hidden="true"><div class="thumbs" id="tr-th"></div><div class="shade" id="tr-l"></div><div class="shade" id="tr-r"></div><div class="sel" id="tr-sel"></div><div class="hd" id="tr-ha"><i></i></div><div class="hd" id="tr-hb"><i></i></div><div class="ph" id="tr-ph"></div></div>'+
+      '<div class="trow"><label for="tr-a">Boshlanishi</label><input type="range" id="tr-a" min="0" step="0.1"><b id="tr-av">0:00.0</b></div>'+
+      '<div class="trow"><label for="tr-b">Tugashi</label><input type="range" id="tr-b" min="0" step="0.1"><b id="tr-bv">0:00.0</b></div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="tr-play">▶ Tanlanganni ko\'rish</button><button class="btn sm" type="button" id="tr-seta">Shu joydan boshlash</button><button class="btn sm" type="button" id="tr-setb">Shu joyda tugatish</button><button class="btn sm" type="button" id="tr-all">Butun video</button></div>'+
+      '<p class="note" style="margin:0" id="tr-info"></p>'+
+      (canEnc?'<label class="check"><input type="checkbox" id="tr-enc" checked'+(opt.mustEncode?' disabled':'')+'><span><b>Kesilgan qismni yangi fayl qilib saqlash</b> — fayl kichrayadi, sayt tezroq ochiladi. Kesish real vaqtda: 10 soniyalik qism ≈ 10 soniya, shu oynani yopmang.</span></label>':(opt.canEncode?'<p class="note" style="margin:0">Bu brauzer faylni kesib saqlay olmaydi: video to\'liq yuklanadi, saytda esa faqat tanlangan qism aylanadi.</p>':'<p class="note" style="margin:0">Yuklangan video: fayl o\'zgarmaydi, saytda faqat tanlangan qism aylanadi.</p>'))+
+      '<div id="tr-prog" hidden><div class="tbar"><i id="tr-pi"></i></div><p class="note" style="margin:6px 0 0" id="tr-pt">Kesilmoqda…</p></div>'+
+      '<div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" type="button" id="tr-cancel">Bekor qilish</button><button class="btn primary" type="button" id="tr-ok" disabled>Tayyor</button></div>');
+    $("modal").classList.add("wide");
+    var v=$("tr-v"),A=$("tr-a"),B=$("tr-b"),dur=0,a=0,b=0,busy=false,playSel=false,closed=false;
+    function finish(r){if(closed)return;closed=true;$("scrim").dataset.lock="";try{v.pause();v.removeAttribute("src");v.load()}catch(e){}closeModal();resolve(r)}
+    MODAL_CB=function(){if(!closed){closed=true;try{v.pause()}catch(e){}resolve(null)}};
+    function paint(){
+      if(!dur)return;var pa=a/dur*100,pb=b/dur*100;
+      $("tr-l").style.cssText="left:0;width:"+pa+"%";$("tr-r").style.cssText="left:"+pb+"%;right:0";
+      $("tr-sel").style.cssText="left:"+pa+"%;width:"+(pb-pa)+"%";$("tr-ha").style.left=pa+"%";$("tr-hb").style.left=pb+"%";
+      A.value=a;B.value=b;$("tr-av").textContent=fmt1(a);$("tr-bv").textContent=fmt1(b);
+      var len=b-a;$("tr-info").textContent="Tanlandi: "+fmt1(a)+" — "+fmt1(b)+" · "+len.toFixed(1)+" s (butun video "+fmt1(dur)+")"+(len>30?". Slayd uchun 5–20 soniya yetarli.":"");
+    }
+    function setA(x){a=Math.max(0,Math.min(x,b-0.5));paint()}
+    function setB(x){b=Math.min(dur,Math.max(x,a+0.5));paint()}
+    v.addEventListener("loadedmetadata",function(){
+      if(closed)return;dur=v.duration&&isFinite(v.duration)?v.duration:0;if(!dur){$("tr-info").textContent="Video ochilmadi: bu formatni brauzer o'qiy olmaydi. MP4 (H.264) qilib qayta saqlang.";return}
+      A.max=B.max=dur;a=Math.max(0,Math.min(opt.start||0,dur-0.5));b=opt.end&&opt.end>a?Math.min(opt.end,dur):dur;paint();$("tr-ok").disabled=false;
+      try{v.currentTime=a}catch(e){}
+      thumbs();
+    });
+    v.addEventListener("error",function(){if(closed)return;$("tr-info").textContent="Video ochilmadi: bu formatni brauzer o'qiy olmaydi. MP4 (H.264) qilib qayta saqlang."});
+    v.addEventListener("timeupdate",function(){if(!dur||closed)return;$("tr-ph").style.left=(v.currentTime/dur*100)+"%";if(playSel&&v.currentTime>=b){v.pause();playSel=false;try{v.currentTime=a}catch(e){}$("tr-play").textContent="▶ Tanlanganni ko'rish"}});
+    v.src=opt.url;
+    async function thumbs(){
+      var n=Math.max(6,Math.min(12,Math.round($("tr-strip").clientWidth/70))),tv=document.createElement("video");tv.muted=true;tv.preload="auto";tv.src=opt.url;
+      try{if(tv.readyState<1)await once(tv,"loadedmetadata")}catch(e){return}
+      var box=$("tr-th");if(!box)return;
+      for(var i=0;i<n;i++){if(closed)return;var cv=document.createElement("canvas");cv.width=96;cv.height=Math.round(96*(tv.videoHeight||16)/(tv.videoWidth||9));box.appendChild(cv)}
+      for(var j=0;j<n;j++){if(closed)return;try{await seekTo(tv,(j+.5)/n*dur);var cv2=box.children[j];cv2.getContext("2d").drawImage(tv,0,0,cv2.width,cv2.height)}catch(e){return}}
+      tv.removeAttribute("src");tv.load();
+    }
+    A.addEventListener("input",function(){setA(+A.value);try{v.currentTime=a}catch(e){}});
+    B.addEventListener("input",function(){setB(+B.value);try{v.currentTime=b}catch(e){}});
+    (function(){var st=$("tr-strip"),drag=null;
+      function tAt(x){var r=st.getBoundingClientRect();return clamp01((x-r.left)/r.width)*dur}
+      st.addEventListener("pointerdown",function(e){if(!dur||busy)return;var t=tAt(e.clientX);drag=Math.abs(t-a)<=Math.abs(t-b)?"a":"b";try{st.setPointerCapture(e.pointerId)}catch(_){}if(drag==="a")setA(t);else setB(t);try{v.currentTime=drag==="a"?a:b}catch(_){}});
+      st.addEventListener("pointermove",function(e){if(!drag)return;var t=tAt(e.clientX);if(drag==="a")setA(t);else setB(t);try{v.currentTime=drag==="a"?a:b}catch(_){}});
+      ["pointerup","pointercancel"].forEach(function(ev){st.addEventListener(ev,function(){drag=null})});
+    })();
+    $("tr-play").addEventListener("click",function(){if(!dur)return;if(playSel){v.pause();playSel=false;this.textContent="▶ Tanlanganni ko'rish";return}playSel=true;this.textContent="❚❚ To'xtatish";v.currentTime=a;var p=v.play();if(p&&p.catch)p.catch(function(){})});
+    $("tr-seta").addEventListener("click",function(){setA(v.currentTime)});
+    $("tr-setb").addEventListener("click",function(){setB(v.currentTime)});
+    $("tr-all").addEventListener("click",function(){a=0;b=dur;paint()});
+    $("tr-cancel").addEventListener("click",function(){if(busy)return;finish(null)});
+    $("tr-ok").addEventListener("click",async function(){
+      if(!dur||busy)return;var full=a<0.05&&b>dur-0.05,enc=canEnc&&$("tr-enc")&&$("tr-enc").checked&&(!full||opt.mustEncode);
+      if(!enc){finish({start:full?0:+a.toFixed(2),end:full?null:+b.toFixed(2),file:null});return}
+      busy=true;$("scrim").dataset.lock="1";this.disabled=true;$("tr-cancel").disabled=true;v.pause();playSel=false;$("tr-prog").hidden=false;
+      try{
+        var f=await recordSegment(opt.url,a,b,function(p){$("tr-pi").style.width=Math.round(p*100)+"%";$("tr-pt").textContent="Kesilmoqda: "+Math.round(p*100)+"% — oynani yopmang"});
+        $("tr-pt").textContent="Tayyor: "+(f.size/1048576).toFixed(1)+" MB";finish({start:0,end:null,file:f});
+      }catch(e){busy=false;$("scrim").dataset.lock="";this.disabled=false;$("tr-cancel").disabled=false;$("tr-prog").hidden=true;toast(e.message||"Kesib bo'lmadi.",6000)}
+    });
+    document.addEventListener("visibilitychange",function vis(){if(closed){document.removeEventListener("visibilitychange",vis);return}if(busy&&document.hidden)toast("Kesish davomida boshqa oynaga o'tmang — yozuv to'xtab qoladi.",6000)});
+  });
+}
+
 async function addSlides(files){
   var skip=0,big=0,bad=0;
   for(var i=0;i<files.length;i++){
     var f=files[i];
     if(E.slides.length>=MAXM){skip++;continue}
     var nm=(f.name||"").toLowerCase(),isHeic=/image\/hei[cf]/.test(f.type)||/\.hei[cf]$/.test(nm);
-    var tp=(/^image\//.test(f.type)||isHeic)?"image":/^video\/(mp4|webm)$/.test(f.type)?"video":null;if(!tp){skip++;continue}
+    var isMov=/^video\/quicktime$/.test(f.type)||/\.mov$/.test(nm);
+    var tp=(/^image\//.test(f.type)||isHeic)?"image":(/^video\/(mp4|webm)$/.test(f.type)||/\.(mp4|webm)$/.test(nm)||isMov)?"video":null;if(!tp){skip++;continue}
     if(tp==="image"&&f.type!=="image/gif"){
       try{f=await toJpeg(f)}catch(e){bad++;continue}
+    }
+    if(tp==="video"){
+      if(f.size>TRIM_SRC_MAX){big++;continue}
+      var su=URL.createObjectURL(f),must=isMov||f.size>MAX_FILE;
+      var r=await openTrimmer({url:su,canEncode:true,mustEncode:must});
+      if(!r){URL.revokeObjectURL(su);continue}
+      if(r.file){URL.revokeObjectURL(su);f=r.file}
+      else if(must){URL.revokeObjectURL(su);toast(isMov?"MOV videoni saqlash uchun uni kesib yangi fayl qilish kerak (Chrome yoki Edge'da oching).":"Video 25 MB dan katta: qisqaroq qismini kesib saqlang.",7000);continue}
+      if(f.size>MAX_FILE){if(!r.file)URL.revokeObjectURL(su);toast("Kesilgan video ham 25 MB dan katta. Qisqaroq qism tanlang.",6000);continue}
+      var vext=/webm/.test(f.type)?"webm":"mp4",vurl=r.file?URL.createObjectURL(f):su;
+      E.slides.push({k:"new",m:{type:"video",file:f,ext:vext,start:r.start||0,end:r.end||null},url:vurl});
+      renderMgrid();continue;
     }
     if(f.size>MAX_FILE){big++;continue}
     var ext=f.type==="image/jpeg"?"jpg":f.type==="image/gif"?"gif":(f.name.split(".").pop()||"").toLowerCase().replace(/[^a-z0-9]/g,"")||(tp==="video"?"mp4":"jpg");
@@ -1062,11 +1204,19 @@ async function addSlides(files){
   }
   renderMgrid();
   if(bad)toast("Rasm ochilmadi (format qo'llanmaydi). JPG yoki PNG qilib qayta tanlang.",6000);
-  else if(big)toast("25 MB dan katta fayl qo'shilmadi. Siqib qayta yuklang.");
-  else if(skip)toast("Ko'pi bilan 4 ta slayd: rasm, GIF, MP4 yoki WebM.");
+  else if(big)toast("Fayl juda katta (rasm 25 MB, video 400 MB gacha).");
+  else if(skip)toast("Ko'pi bilan 4 ta slayd: rasm, GIF, MP4, WebM yoki MOV.");
 }
-$("mgrid").addEventListener("click",function(e){
-  var all=E.slides,d=e.target.closest("[data-md]"),mv=e.target.closest("[data-mm]");
+$("mgrid").addEventListener("click",async function(e){
+  var all=E.slides,d=e.target.closest("[data-md]"),mv=e.target.closest("[data-mm]"),tr=e.target.closest("[data-mt]");
+  if(tr){
+    var x0=all[+tr.getAttribute("data-mt")];if(!x0)return;
+    var isNew=x0.k==="new",r=await openTrimmer({url:x0.url,start:x0.m.start||0,end:x0.m.end||null,canEncode:isNew});
+    if(!r)return;
+    if(r.file){URL.revokeObjectURL(x0.url);x0.m=Object.assign({},x0.m,{file:r.file,ext:/webm/.test(r.file.type)?"webm":"mp4",start:0,end:null});x0.url=URL.createObjectURL(r.file)}
+    else{x0.m=Object.assign({},x0.m,{start:r.start||0,end:r.end||null});if(!x0.m.start)delete x0.m.start;if(!x0.m.end)delete x0.m.end}
+    renderMgrid();return;
+  }
   if(d){var x=all.splice(+d.getAttribute("data-md"),1)[0];if(x&&x.k==="new")URL.revokeObjectURL(x.url)}
   else if(mv){var p=mv.getAttribute("data-mm").split(","),i=+p[0],j=i+(+p[1]);if(j<0||j>=all.length)return;var y=all[i];all[i]=all[j];all[j]=y}
   else return;
@@ -1121,8 +1271,8 @@ $("ed-save").addEventListener("click",async function(){
     var seq=E.slides;
     var newMedia=[];
     seq.forEach(function(x,i){
-      if(x.k==="keep")newMedia.push(x.m);
-      else{var p="media/"+slug(t.title)+"-"+st+"-"+(i+1)+"."+x.m.ext;files.push({path:p,data:x.m.file});newMedia.push({type:x.m.type,src:p})}
+      if(x.k==="keep"){var km=Object.assign({},x.m);if(!(km.start>0))delete km.start;if(!km.end)delete km.end;newMedia.push(km)}
+      else{var p="media/"+slug(t.title)+"-"+st+"-"+(i+1)+"."+x.m.ext;files.push({path:p,data:x.m.file});var nm2={type:x.m.type,src:p};if(x.m.start>0)nm2.start=x.m.start;if(x.m.end)nm2.end=x.m.end;newMedia.push(nm2)}
     });
     (o&&o.media||[]).forEach(function(m){if(!newMedia.some(function(n){return n.src===m.src}))del.push(m.src)});
     t.media=newMedia;
