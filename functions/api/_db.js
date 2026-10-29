@@ -23,6 +23,8 @@ export async function ensureSchema(db) {
     db.prepare("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)"),
     db.prepare("CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, p256dh TEXT, auth TEXT, vid TEXT, ts INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS tg_subs (uid INTEGER PRIMARY KEY, name TEXT, ts INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS plan (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, kind TEXT NOT NULL, track TEXT, title TEXT, body TEXT, image TEXT, channel INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', progress TEXT, result TEXT, lock INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS plan_due ON plan(status, at)"),
   ]);
   ready = true;
 }

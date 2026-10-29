@@ -1,0 +1,31 @@
+name: Kontent rejasi
+
+# Har 10 daqiqada saytni "uyg'otadi": vaqti kelgan rejalashtirilgan xabarlar shu paytda yuboriladi.
+# Ish ko'p bo'lsa (ko'p obunachi), tugaguncha qayta-qayta chaqiradi.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: tick
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SITE: ${{ vars.SITE_URL || 'https://az-playlist.pages.dev' }}
+    steps:
+      - name: Rejani bajarish
+        run: |
+          for i in $(seq 1 120); do
+            out=$(curl -fsS -m 30 -X POST "$SITE/api/tick" || echo '{"more":false,"error":"curl"}')
+            echo "$i: $out"
+            echo "$out" | grep -q '"more":true' || break
+            sleep 1
+          done

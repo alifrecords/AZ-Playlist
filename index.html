@@ -440,7 +440,7 @@ async function load(){
   var st=DATA.settings||{};
   if(st.artist)$("artist").textContent=st.artist;
   $("foot").textContent="© "+(st.artist||"AZIMXODJAYEV MUSIC");
-  TRACKS=(DATA.tracks||[]).filter(function(t){return t&&t.id&&t.title&&safePath(t.audio)});
+  TRACKS=(DATA.tracks||[]).filter(function(t){return t&&t.id&&t.title&&safePath(t.audio)&&isPub(t)});
   TRACKS.forEach(function(t){if(t.intro&&!safePath(t.intro.file))t.intro=null;t.media=(t.media||[]).filter(function(m){return safePath(m.src)})});
   var nf=TRACKS.filter(function(t){return !t.introOnly}).length,ni=TRACKS.filter(function(t){return t.intro||t.introOnly}).length;
   $("count").textContent=nf+" ta qo'shiq · "+ni+" ta intro";
@@ -456,7 +456,8 @@ var BNR_ICON={off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 function renderBanner(){
   var b=(DATA.settings||{}).banner,box=$("bnr"),v=$("bnr-v");
   var closed=false;try{closed=sessionStorage.getItem("az_bnr_x")===(b&&b.src)}catch(e){}
-  if(!b||!b.src||b.on===false||!safePath(b.src)||closed){box.hidden=true;try{v.pause();v.removeAttribute("src");v.load()}catch(e){}return}
+  var nowB=Date.now(),inWin=!b||((!b.from||Date.parse(b.from)<=nowB)&&(!b.to||Date.parse(b.to)>nowB));
+  if(!b||!b.src||b.on===false||!safePath(b.src)||closed||!inWin){box.hidden=true;try{v.pause();v.removeAttribute("src");v.load()}catch(e){}return}
   if(b.w&&b.h)box.style.setProperty("--ar",String(b.w/b.h));
   if(b.poster&&safePath(b.poster))v.poster=b.poster;
   if(v.getAttribute("src")!==b.src){v.src=b.src}
@@ -511,7 +512,9 @@ document.addEventListener("click",function(e){
 });
 
 /* ---------- YANGI belgisi: oxirgi 7 kunda qo'shilgan qo'shiqlar ---------- */
-function isNew(t){if(!t||!t.added)return false;var d=Date.parse(t.added+"T00:00:00+05:00");return isFinite(d)&&Date.now()-d<7*864e5}
+function isNew(t){if(!t)return false;var d=t.publishAt?Date.parse(t.publishAt):(t.added?Date.parse(t.added+"T00:00:00+05:00"):NaN);return isFinite(d)&&Date.now()-d<7*864e5}
+/* rejalashtirilgan qo'shiq chiqish vaqtigacha ko'rinmaydi (admin → Chiqish vaqti) */
+function isPub(t){if(!t.publishAt)return true;var d=Date.parse(t.publishAt);return !isFinite(d)||d<=Date.now()}
 
 /* ---------- yangi qo'shiq xabarlari: telefon bildirishnomasi va Telegram ---------- */
 var NT={mode:null,on:false,key:null};
@@ -951,6 +954,8 @@ $("install").addEventListener("click",function(){
 });
 
 AN.open();AN.appOpen();
+/* rejalashtirilgan xabarlarni o'z vaqtida yuborishga yordam: sayt ochilganda (5 daqiqada bir marta) */
+try{var lt=+lsGet("az_tick")||0;if(Date.now()-lt>5*60000){lsSet("az_tick",String(Date.now()));if(navigator.sendBeacon)navigator.sendBeacon("api/tick",new Blob(["{}"],{type:"text/plain"}));}}catch(e){}
 load();
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&!cur.t){load()}});
 })();

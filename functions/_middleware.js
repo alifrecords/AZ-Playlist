@@ -44,7 +44,8 @@ export async function onRequest(ctx) {
     const pr = await env.ASSETS.fetch(new URL("/playlist.json", url.origin));
     if (!pr.ok) return res;
     const pl = await pr.json();
-    const tracks = (pl.tracks || []).filter((t) => t && t.id && SAFE.test(t.og || ""));
+    const now = Date.now();
+    const tracks = (pl.tracks || []).filter((t) => t && t.id && SAFE.test(t.og || "") && (!t.publishAt || !(Date.parse(t.publishAt) > now)));
     const artist = (pl.settings && pl.settings.artist) || "AZIMXODJAYEV MUSIC";
     const ref = url.searchParams.get("ref") || "";
     let t = ID.test(ref) ? tracks.find((x) => x.id === ref) : null;

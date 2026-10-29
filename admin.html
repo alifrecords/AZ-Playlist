@@ -87,12 +87,26 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .stt td{padding:8px;border-bottom:1px solid var(--line)}
 .stt td.n,.stt th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .tbox{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.pubw{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.pubw .f{flex:1;min-width:220px}.pubw .note{flex-basis:100%;margin:-2px 0 0}
 .chs{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px}
 .bnr{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:18px;border-top:1px solid var(--line);padding-top:16px}
 @media (max-width:560px){.bnr{grid-template-columns:minmax(0,1fr)}}
 .bnr-prev{border:1px dashed var(--line);border-radius:12px;min-height:200px;display:grid;place-items:center;overflow:hidden;background:var(--bg)}
 .bnr-prev video{width:100%;display:block;max-height:390px;object-fit:contain;background:#000}
 .bnr-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .wd{font-size:11px;font-weight:700;color:var(--faint);text-align:center;padding:2px 0;text-transform:uppercase;letter-spacing:.06em}
+.cal .dc{min-height:78px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:6px;display:flex;flex-direction:column;gap:4px;cursor:pointer;text-align:left;color:var(--fg);font:inherit;min-width:0}
+.cal .dc:hover{border-color:var(--muted)}.cal .dc.out{opacity:.35}.cal .dc.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}.cal .dc.sel{background:var(--surface-2);border-color:var(--fg)}
+.cal .dc b{font:600 12px var(--mono);color:var(--muted)}.cal .dc.today b{color:var(--accent)}
+.cal .ev{font-size:11px;font-weight:700;border-radius:5px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.rel,.d.rel{background:var(--accent);color:var(--accent-ink)}.ev.msg,.d.msg{background:#2E5AA8;color:#fff}.ev.done,.d.done{background:var(--surface-2);color:var(--muted);text-decoration:line-through}
+.cal .more{font-size:10.5px;color:var(--muted)}
+.cal-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.cal-leg .d{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
+.pl-list{display:flex;flex-direction:column;gap:8px}
+.pli{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.pli .when{font:600 13px var(--mono);min-width:120px}.pli .what{flex:1;min-width:180px}.pli .what b{display:block}.pli .what span{font-size:12.5px;color:var(--muted)}
+@media (max-width:640px){.cal{gap:3px}.cal .dc{min-height:54px;padding:4px}.cal .ev{font-size:0;height:6px;padding:0}.cal .wd{font-size:10px}}
 .sbx summary{cursor:pointer;font-weight:700;padding:6px 0}
 .tgbox{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:14px;color:var(--muted)}
 .tgbox b{color:var(--fg)}
@@ -220,7 +234,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v17</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v18</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -272,6 +286,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
         <p class="note" style="margin:0">Saytga kirganlarga eng tepada ko'rinadi: reklama, yangi qo'shiq anonsi, aksiya. MP4 yoki WebM, 25 MB gacha. Ovozsiz aylanadi, tomoshabin ovozni o'zi yoqadi.</p>
         <label class="f"><span>Tugma matni (ixtiyoriy)</span><input class="field" id="bnr-cta" placeholder="Masalan: Tinglash" maxlength="28"></label>
         <label class="f"><span>Tugma bosilganda ochiladigan qo'shiq (ixtiyoriy)</span><select class="field" id="bnr-track"><option value="">— qo'shiq tanlanmagan —</option></select></label>
+        <div class="grid2"><label class="f"><span>Ko'rsatish boshlanishi (ixtiyoriy)</span><input class="field" type="datetime-local" id="bnr-from"></label><label class="f"><span>Ko'rsatish tugashi (ixtiyoriy)</span><input class="field" type="datetime-local" id="bnr-to"></label></div>
         <label class="check"><input type="checkbox" id="bnr-on"><span>Saytda ko'rsatish</span></label>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" id="bnr-pick">Video tanlash</button><button class="btn" type="button" id="bnr-del" hidden>Bannerni o'chirish</button></div>
         <input type="file" id="bnr-file" accept="video/mp4,video/webm" hidden>
@@ -295,6 +310,28 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
     </div>
     <div class="tgbox" id="tg-box"></div>
     <div id="cm-body"><p class="note">Yuklanmoqda…</p></div>
+  </section>
+
+  <section class="card" id="plan" hidden>
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><h2>📅 Kontent rejasi</h2><p class="note" style="margin:4px 0 0">Qo'shiq chiqishlari va xabarlar kunlar kesimida. Vaqti kelganda avtomatik bajariladi (±10 daqiqa, Toshkent vaqti).</p></div>
+      <span style="display:flex;gap:8px;align-items:center"><button class="iconbtn" type="button" id="pl-prev" aria-label="Oldingi oy">‹</button><b id="pl-month" style="min-width:150px;text-align:center"></b><button class="iconbtn" type="button" id="pl-next" aria-label="Keyingi oy">›</button><button class="btn sm" type="button" id="pl-today">Bugun</button></span>
+    </div>
+    <div class="cal" id="pl-cal"></div>
+    <div class="cal-leg"><span><i class="d rel"></i>Qo'shiq chiqishi</span><span><i class="d msg"></i>Xabar</span><span><i class="d done"></i>Bajarilgan</span></div>
+    <div id="pl-day"></div>
+    <details class="sbx" id="pl-addw"><summary>➕ Xabar rejalashtirish</summary>
+      <div class="grid2" style="margin-top:12px">
+        <label class="f"><span>Sana va vaqt</span><input class="field" type="datetime-local" id="pl-at"></label>
+        <label class="f"><span>Bosilganda ochiladigan qo'shiq (ixtiyoriy)</span><select class="field" id="pl-track"><option value="">— asosiy sahifa —</option></select></label>
+        <label class="f"><span>Sarlavha</span><input class="field" id="pl-title" maxlength="80" placeholder="Masalan: 🔥 Juma hiti!"></label>
+        <label class="f"><span>Matn</span><input class="field" id="pl-body" maxlength="180" placeholder="Qisqa matn"></label>
+      </div>
+      <label class="check" style="margin-top:10px"><input type="checkbox" id="pl-ch"><span>Telegram kanalga ham joylash</span></label>
+      <div style="margin-top:10px"><button class="btn primary" type="button" id="pl-add">Rejaga qo'shish</button></div>
+    </details>
+    <h3 style="margin:6px 0 0">Navbatdagilar</h3>
+    <div id="pl-list" class="pl-list"><p class="note">Yuklanmoqda…</p></div>
   </section>
 
   <section class="card" id="subs" hidden>
@@ -387,6 +424,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
         </div>
         <div class="f" id="q-wrap" hidden><label for="e-kbps">Saytga chiqadigan MP3 sifati</label><select class="field" id="e-kbps"></select><span class="note" id="q-est"></span></div>
         <div id="report"></div>
+        <div class="pubw"><label class="f"><span>📅 Chiqish vaqti (ixtiyoriy)</span><input class="field" type="datetime-local" id="e-pub"></label><button class="btn sm" type="button" id="e-pub-clr">Hozir chiqsin</button><span class="note" id="e-pub-h">Bo'sh — saqlangan zahoti chiqadi. Vaqt tanlansa, qo'shiq shu vaqtgacha saytda ko'rinmaydi.</span></div>
         <label class="check" id="e-notify-w"><input type="checkbox" id="e-notify"><span><b>📣 Obunachilarga xabar yuborish</b> — sayt yangilangach, telefon va Telegram obunachilariga (sozlamada yoqilgan bo'lsa, kanalga ham) «Yangi qo'shiq» xabari ketadi. <span class="note" id="e-notify-n"></span></span></label>
         <label class="check"><input type="checkbox" id="e-own"><span><b>Bu asarning muallifi va huquq egasi menman.</b> Asar mualliflik huquqi bilan himoyalangan holda joylanadi.</span></label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" type="button" id="ed-save" disabled>GitHub'ga joylash</button><span class="note" id="ed-hint"></span></div>
@@ -610,7 +648,7 @@ async function connect(){
     await loadPlaylist();
     $("conn-form").hidden=true;$("conn-ok").hidden=false;$("conn-edit").hidden=false;$("conn-repo").textContent=CFG.owner+"/"+CFG.repo+" · "+CFG.branch;
     $("conn-state").textContent="Ulangan";$("conn-state").className="tag ok";
-    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;$("cmts").hidden=false;$("subs").hidden=false;clearInterval(tick);$("gh-msg").textContent="";loadStats();loadComments();loadTg();loadSubs();
+    $("settings").hidden=false;$("materials").hidden=false;$("stats").hidden=false;$("cmts").hidden=false;$("subs").hidden=false;$("plan").hidden=false;clearInterval(tick);$("gh-msg").textContent="";loadStats();loadComments();loadTg();loadSubs();loadPlan();
   }catch(e){clearInterval(tick);$("gh-msg").textContent=e.status===0?"GitHub'ga ulanib bo'lmadi: internet yoki VPN'ni tekshiring (VPN yoqilgan bo'lsa — o'chirib, o'chiq bo'lsa — yoqib ko'ring), keyin «Ulanish»ni qayta bosing.":e.message;$("conn-state").textContent="Ulanmagan";$("conn-state").className="tag mute"}
 }
 $("gh-connect").addEventListener("click",function(){
@@ -646,10 +684,12 @@ function bnrRender(){
   if(b&&b.src){pv.innerHTML='<video src="'+esc(rawUrl(b.src))+'" muted loop playsinline autoplay controls preload="metadata"></video>';$("bnr-del").hidden=false;$("bnr-pick").textContent="Boshqa video bilan almashtirish"}
   else{pv.innerHTML='<span class="note">Banner yo\'q</span>';$("bnr-del").hidden=true;$("bnr-pick").textContent="Video tanlash"}
   $("bnr-on").checked=!!(b&&b.src&&b.on!==false);$("bnr-on").disabled=!(b&&b.src);
+  $("bnr-from").value=b&&b.from?toLocalInput(b.from):"";$("bnr-to").value=b&&b.to?toLocalInput(b.to):"";$("bnr-from").disabled=$("bnr-to").disabled=!(b&&b.src);
   $("bnr-cta").value=b&&b.cta||"";sel.value=b&&b.track||"";$("bnr-cta").disabled=$("bnr-track").disabled=!(b&&b.src);
 }
-function bnrSet(){var b=DATA.settings.banner;if(!b)return;b.on=$("bnr-on").checked;b.cta=$("bnr-cta").value.trim().slice(0,28);b.track=$("bnr-track").value||"";markDirty()}
-["bnr-on","bnr-cta","bnr-track"].forEach(function(id){$(id).addEventListener(id==="bnr-cta"?"input":"change",bnrSet)});
+function bnrSet(){var b=DATA.settings.banner;if(!b)return;b.on=$("bnr-on").checked;b.cta=$("bnr-cta").value.trim().slice(0,28);b.track=$("bnr-track").value||"";
+  var f=$("bnr-from").value,tt=$("bnr-to").value;if(f)b.from=new Date(f).toISOString();else delete b.from;if(tt)b.to=new Date(tt).toISOString();else delete b.to;markDirty()}
+["bnr-on","bnr-cta","bnr-track","bnr-from","bnr-to"].forEach(function(id){$(id).addEventListener(id==="bnr-cta"?"input":"change",bnrSet)});
 function videoMeta(file){
   return new Promise(function(res){
     var v=document.createElement("video"),u=URL.createObjectURL(file),done=false;v.muted=true;v.playsInline=true;v.preload="auto";
@@ -699,6 +739,92 @@ function checkContact(){
   h.textContent=txt;h.style.color=ok?"var(--ok, #8FD9A8)":"var(--bad, #FF9B8A)";
 }
 /* ================= obunachilar va xabar yuborish ================= */
+/* ================= kontent rejasi ================= */
+var TK="Asia/Tashkent";
+function tkParts(ms){var f=new Intl.DateTimeFormat("en-CA",{timeZone:TK,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(ms)),o={};f.forEach(function(p){o[p.type]=p.value});return o}
+function tkDay(ms){var p=tkParts(ms);return p.year+"-"+p.month+"-"+p.day}
+function fmtTk(ms){var p=tkParts(ms);return p.day+"."+p.month+" "+p.hour+":"+p.minute}
+function toLocalInput(iso){var d=new Date(iso),z=function(n){return String(n).padStart(2,"0")};return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes())}
+function pubHint(){var v=$("e-pub").value,h=$("e-pub-h");if(!v){h.textContent="Bo'sh — saqlangan zahoti chiqadi. Vaqt tanlansa, qo'shiq shu vaqtgacha saytda ko'rinmaydi.";h.style.color="";return}
+  var ms=new Date(v).getTime();if(ms<=Date.now()+60000){h.textContent="⚠ Bu vaqt o'tib ketgan — qo'shiq darhol chiqadi.";h.style.color="var(--bad,#FF9B8A)";return}
+  h.textContent="⏳ Saytda "+fmtTk(ms)+" da (Toshkent vaqti) paydo bo'ladi. «Obunachilarga xabar» belgilangan bo'lsa, xabar ham shu vaqtda ketadi.";h.style.color="var(--ok,#8FD9A8)"}
+$("e-pub").addEventListener("input",pubHint);$("e-pub-clr").addEventListener("click",function(){$("e-pub").value="";pubHint()});
+var PLAN={items:[],month:null,sel:null,ok:false};
+async function loadPlan(){
+  var sel=$("pl-track"),v=sel.value;sel.innerHTML='<option value="">— asosiy sahifa —</option>'+(DATA.tracks||[]).map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.title)+'</option>'}).join("");sel.value=v;
+  $("pl-ch").checked=!!((DATA.settings.channel||{}).post);
+  try{var j=await api("api/admin/plan");PLAN.items=j.items||[];PLAN.ok=true}catch(e){PLAN.items=[];PLAN.ok=false;PLAN.err=e}
+  if(!PLAN.month){var p=tkParts(Date.now());PLAN.month={y:+p.year,m:+p.month}}
+  planRender();
+}
+function planEvents(){
+  var ev=[],rel={};
+  PLAN.items.forEach(function(p){if(p.kind==="release")rel[p.track]=p});
+  (DATA.tracks||[]).forEach(function(t){if(!t.publishAt)return;var ms=Date.parse(t.publishAt);if(!isFinite(ms))return;var p=rel[t.id];
+    ev.push({at:ms,kind:"release",title:t.title,track:t.id,plan:p||null,done:ms<=Date.now()&&(!p||p.status==="done"),notify:!!p,status:p?p.status:(ms<=Date.now()?"done":"pending"),result:p&&p.result})});
+  PLAN.items.forEach(function(p){if(p.kind==="message")ev.push({at:p.at,kind:"message",title:p.title,body:p.body,track:p.track,plan:p,done:p.status==="done",status:p.status,result:p.result})});
+  return ev.sort(function(a,b){return a.at-b.at});
+}
+var MONTHS=["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+function planRender(){
+  var M=PLAN.month,ev=planEvents(),byDay={};ev.forEach(function(e){var k=tkDay(e.at);(byDay[k]=byDay[k]||[]).push(e)});
+  $("pl-month").textContent=MONTHS[M.m-1]+" "+M.y;
+  var first=new Date(Date.UTC(M.y,M.m-1,1)),startDow=(first.getUTCDay()+6)%7,today=tkDay(Date.now()),h="";
+  ["Du","Se","Ch","Pa","Ju","Sh","Ya"].forEach(function(d){h+='<div class="wd">'+d+'</div>'});
+  for(var i=0;i<42;i++){
+    var d=new Date(Date.UTC(M.y,M.m-1,1-startDow+i)),k=d.toISOString().slice(0,10),out=d.getUTCMonth()!==M.m-1,list=byDay[k]||[];
+    if(i>=35&&out&&d.getUTCDate()<8)break;
+    h+='<button type="button" class="dc'+(out?" out":"")+(k===today?" today":"")+(k===PLAN.sel?" sel":"")+'" data-day="'+k+'" aria-label="'+k+(list.length?", "+list.length+" ta reja":"")+'"><b>'+d.getUTCDate()+'</b>'+
+      list.slice(0,3).map(function(e){return '<span class="ev '+(e.done?"done":e.kind==="release"?"rel":"msg")+'" title="'+esc(fmtTk(e.at)+" "+e.title)+'">'+esc(tkParts(e.at).hour+":"+tkParts(e.at).minute+" "+e.title)+'</span>'}).join("")+
+      (list.length>3?'<span class="more">+'+(list.length-3)+' ta</span>':'')+'</button>';
+  }
+  $("pl-cal").innerHTML=h;
+  /* tanlangan kun */
+  var dayBox=$("pl-day");
+  if(PLAN.sel){var dl=byDay[PLAN.sel]||[];var p=PLAN.sel.split("-");dayBox.innerHTML='<h3 style="margin:4px 0 8px">'+(+p[2])+" "+MONTHS[+p[1]-1]+'</h3>'+(dl.length?'<div class="pl-list">'+dl.map(planItemHTML).join("")+'</div>':'<p class="note" style="margin:0">Bu kunga reja yo\'q. Pastdagi «Xabar rejalashtirish» yoki qo\'shiq muharriridagi «Chiqish vaqti» orqali qo\'shing.</p>')}
+  else dayBox.innerHTML="";
+  /* navbat */
+  var up=ev.filter(function(e){return !e.done&&e.status!=="failed"});
+  $("pl-list").innerHTML=!PLAN.ok&&PLAN.err?(PLAN.err.code==="nodb"||PLAN.err.code==="nofn"?setupHTML(PLAN.err.code==="nodb"?"nodb":"nofn"):'<p class="note">Reja yuklanmadi: '+esc(PLAN.err.message)+'</p>'):
+    up.length?up.map(planItemHTML).join(""):'<p class="note" style="margin:0">Navbatda hech narsa yo\'q.</p>';
+}
+function planItemHTML(e){
+  var st=e.status==="running"?'<span class="tag info">Yuborilmoqda…</span>':e.status==="failed"?'<span class="tag" style="background:rgba(255,155,138,.15);color:var(--bad)">Xato</span>':e.done?'<span class="tag ok">Bajarildi</span>':'<span class="tag acc">Kutilmoqda</span>';
+  var what=e.kind==="release"?'<b>🎵 «'+esc(e.title)+'» chiqadi</b><span>'+(e.notify?"obunachilarga xabar bilan":"xabarsiz")+(e.result?" · "+esc(e.result):"")+'</span>':
+    '<b>📣 '+esc(e.title)+'</b><span>'+esc(e.body||"")+(e.track?" · ▶ "+esc(titleOf(e.track)):"")+(e.plan&&e.plan.channel?" · kanalga ham":"")+(e.result?" · "+esc(e.result):"")+'</span>';
+  var ops="";
+  if(!e.done&&e.status!=="running"){
+    if(e.kind==="release")ops='<button class="btn sm" type="button" data-pe="'+esc(e.track)+'">Tahrirlash</button>';
+    if(e.plan)ops+='<button class="btn sm" type="button" data-pnow="'+e.plan.id+'">Hozir bajarish</button><button class="btn sm" type="button" data-pdel="'+e.plan.id+'" style="color:var(--bad,#FF9B8A)">'+(e.kind==="release"?"Xabarni bekor qilish":"Bekor qilish")+'</button>';
+  }else if(e.plan&&(e.done||e.status==="failed"))ops='<button class="btn sm" type="button" data-pdel="'+e.plan.id+'">O\'chirish</button>';
+  return '<div class="pli"><span class="when">'+esc(fmtTk(e.at))+'</span><div class="what">'+what+'</div>'+st+'<span style="display:flex;gap:6px;flex-wrap:wrap">'+ops+'</span></div>';
+}
+$("pl-cal").addEventListener("click",function(e){var b=e.target.closest("[data-day]");if(!b)return;PLAN.sel=PLAN.sel===b.getAttribute("data-day")?null:b.getAttribute("data-day");
+  if(PLAN.sel){var d=PLAN.sel+"T19:00";if(!$("pl-at").value||$("pl-at").value.slice(0,10)!==PLAN.sel)$("pl-at").value=d}planRender()});
+$("pl-prev").addEventListener("click",function(){var M=PLAN.month;M.m--;if(M.m<1){M.m=12;M.y--}planRender()});
+$("pl-next").addEventListener("click",function(){var M=PLAN.month;M.m++;if(M.m>12){M.m=1;M.y++}planRender()});
+$("pl-today").addEventListener("click",function(){var p=tkParts(Date.now());PLAN.month={y:+p.year,m:+p.month};PLAN.sel=tkDay(Date.now());planRender()});
+$("plan").addEventListener("click",async function(e){
+  var ed=e.target.closest("[data-pe]"),now=e.target.closest("[data-pnow]"),del=e.target.closest("[data-pdel]");
+  if(ed){var t=(DATA.tracks||[]).filter(function(x){return x.id===ed.getAttribute("data-pe")})[0];if(t)openEditor(t,false);return}
+  if(now||del){var b=now||del;b.disabled=true;
+    try{await api("api/admin/plan",{method:"POST",body:now?{action:"now",id:+now.getAttribute("data-pnow")}:{action:"cancel",id:+del.getAttribute("data-pdel")}});
+      if(now){toast("Bajarilmoqda…");try{for(var i=0;i<60;i++){var r=await fetch("api/tick",{method:"POST",cache:"no-store"});var j=await r.json();if(!j.more)break}}catch(x){}toast("Bajarildi.")}
+      else toast("Rejadan olib tashlandi.");loadPlan()}
+    catch(x){b.disabled=false;toast(x.message,5000)}}
+});
+$("pl-add").addEventListener("click",async function(){
+  var at=$("pl-at").value?new Date($("pl-at").value).getTime():0,title=$("pl-title").value.trim();
+  if(!at){toast("Sana va vaqtni tanlang.");return}if(at<Date.now()){toast("Bu vaqt o'tib ketgan.");return}if(!title){toast("Sarlavha yozing.");$("pl-title").focus();return}
+  var tr=$("pl-track").value,t=tr&&(DATA.tracks||[]).filter(function(x){return x.id===tr})[0];
+  var img=t?(t.og||((t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||"")):"";
+  this.disabled=true;
+  try{await api("api/admin/plan",{method:"POST",body:{action:"add",kind:"message",at:at,title:title,body:$("pl-body").value.trim(),track:tr,image:img,channel:$("pl-ch").checked}});
+    $("pl-title").value="";$("pl-body").value="";toast("📅 Rejaga qo'shildi: "+fmtTk(at));PLAN.sel=tkDay(at);var p=tkParts(at);PLAN.month={y:+p.year,m:+p.month};loadPlan()}
+  catch(x){toast(x.message,5000)}this.disabled=false;
+});
+setInterval(function(){if(!$("plan").hidden&&document.visibilityState==="visible"&&PLAN.items.some(function(p){return p.status==="running"||(p.status==="pending"&&p.at<=Date.now())}))loadPlan()},30000);
+
 var NTF={total:null,busy:false};
 async function loadSubs(){
   var sel=$("sb-track"),v=sel.value;sel.innerHTML='<option value="">— asosiy sahifa —</option>'+(DATA.tracks||[]).map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.title)+'</option>'}).join("");sel.value=v;
@@ -948,7 +1074,7 @@ function renderList(){
   var up='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',dn='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   $("mlist").innerHTML=T.map(function(t,i){
     return '<div class="mrow"><div class="ord"><button type="button" data-up="'+i+'" aria-label="Yuqoriga">'+up+'</button><button type="button" data-down="'+i+'" aria-label="Pastga">'+dn+'</button></div>'+thumbHTML(t)+
-      '<div style="min-width:0"><div class="nm">'+(t.lang&&t.lang!=="uz"?'<span class="tag info" style="margin-right:6px">'+esc(lname(t))+'</span>':'')+esc(t.title)+'</div><div class="mt">'+(t.introOnly?'<span class="tag info">Intro</span>':'<span class="tag mute">Qo\'shiq</span>')+(t.status==="sold"?'<span class="tag mute">Sotilgan</span>':'<span class="tag ok">Sotuvda</span>')+(t.featured?'<span class="tag acc">Tavsiya</span>':'')+
+      '<div style="min-width:0"><div class="nm">'+(t.publishAt&&Date.parse(t.publishAt)>Date.now()?'<span class="tag acc" style="margin-right:6px" title="Rejalashtirilgan">⏳ '+esc(fmtTk(Date.parse(t.publishAt)))+'</span>':'')+(t.lang&&t.lang!=="uz"?'<span class="tag info" style="margin-right:6px">'+esc(lname(t))+'</span>':'')+esc(t.title)+'</div><div class="mt">'+(t.introOnly?'<span class="tag info">Intro</span>':'<span class="tag mute">Qo\'shiq</span>')+(t.status==="sold"?'<span class="tag mute">Sotilgan</span>':'<span class="tag ok">Sotuvda</span>')+(t.featured?'<span class="tag acc">Tavsiya</span>':'')+
       '<span>'+esc(t.genre||"—")+' · <span class="mono">'+esc(t.bpm||"—")+' BPM · '+esc(keyLabel(t.key))+' · '+fmt(t.duration)+'</span></span>'+(t.intro&&!t.introOnly?'<span class="mono">intro '+fmt(t.intro.duration)+'</span>':'')+(t.media&&t.media.length?'<span>'+t.media.length+' slayd</span>':'')+'</div></div>'+
       '<div class="ops"><button type="button" class="btn sm" data-feat="'+i+'">'+(t.featured?"Tavsiyadan olish":"Tavsiya qilish")+'</button><button type="button" class="btn sm" data-edit="'+i+'">Tahrirlash</button><button type="button" class="btn sm" data-repl="'+i+'">Almashtirish</button><button type="button" class="btn sm danger" data-del="'+i+'">O\'chirish</button></div></div>';
   }).join("");
@@ -1099,7 +1225,7 @@ function openEditor(t,replace){
   $(t&&t.introOnly?"k-intro":"k-full").checked=true;
   $("mkintro").checked=!t||!!t.intro;$("u-fin").value=E.fin;$("u-fout").value=E.fout;
   ["c-bpm","c-key","c-genre"].forEach(function(i){$(i).hidden=true});["a-bpm","a-key","a-genre"].forEach(function(i){$(i).innerHTML=""});
-  $("e-own").checked=false;$("e-notify").checked=!t||!!replace;$("e-notify-n").textContent=NTF.total!=null?"("+NTF.total+" ta obunachi)":"";$("file").value="";$("introbox").hidden=true;$("q-wrap").hidden=true;$("report").innerHTML="";$("nobuf").hidden=false;$("log").hidden=true;$("log").textContent="";
+  $("e-own").checked=false;$("e-pub").value=t&&t.publishAt&&Date.parse(t.publishAt)>Date.now()?toLocalInput(t.publishAt):"";pubHint();$("e-notify").checked=!t||!!replace||!!(t&&t.publishAt&&Date.parse(t.publishAt)>Date.now()&&PLAN.items.some(function(p){return p.kind==="release"&&p.track===t.id&&p.status==="pending"}));$("e-notify-n").textContent=NTF.total!=null?"("+NTF.total+" ta obunachi)":"";$("file").value="";$("introbox").hidden=true;$("q-wrap").hidden=true;$("report").innerHTML="";$("nobuf").hidden=false;$("log").hidden=true;$("log").textContent="";
   $("drop").hidden=!!(t&&!replace);$("load-existing").hidden=!(t&&!replace);
   renderMgrid();updateSave();
   $("editor").hidden=false;$("editor").scrollIntoView({behavior:"smooth"});
@@ -1476,6 +1602,8 @@ $("ed-save").addEventListener("click",async function(){
     var t=o?JSON.parse(JSON.stringify(o)):{id:id,added:new Date().toISOString().slice(0,10)};
     t.title=$("e-title").value.trim();t.genre=$("e-genre").value.trim();t.bpm=parseInt($("e-bpm").value,10)||null;t.key=$("e-key").value.trim().replace("♯","#")||null;
     var lg=$("e-lang").value;if(lg&&lg!=="uz"){t.lang=lg;if(lg==="other"&&$("e-langname").value.trim())t.langName=$("e-langname").value.trim().slice(0,24);else delete t.langName}else{delete t.lang;delete t.langName}
+    var pubv=$("e-pub").value,pubAt=pubv?new Date(pubv).getTime():0;
+    if(pubAt&&pubAt>Date.now()+60000)t.publishAt=new Date(pubAt).toISOString();else delete t.publishAt;
     t.voice=$("e-voice").value;t.mood=$("e-mood").value.trim();t.status=$("e-status").value;
     t.prices={basic:$("e-p1").value.trim(),exclusive:$("e-p2").value.trim()};
     var base="music/"+slug(t.title)+"-"+st;
@@ -1531,7 +1659,13 @@ $("ed-save").addEventListener("click",async function(){
     await commitFiles(files,(o?(E.replace?"Almashtirildi: ":"Tahrirlandi: "):"Qo'shildi: ")+t.title,logLine);
     SAVED=pjson();markDirty();renderList();
     toast(o?"Saqlandi. Sayt 1–2 daqiqada yangilanadi.":"\""+t.title+"\" joylandi. Sayt 1–2 daqiqada yangilanadi.",4500);
-    if($("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""},true)},300)}
+    var schedAt=t.publishAt?Date.parse(t.publishAt):0,chPost=!!((DATA.settings.channel||{}).post);
+    if(schedAt){var tid=t.id,tt=t.title;
+      api("api/admin/plan",{method:"POST",body:$("e-notify").checked?{action:"add",kind:"release",at:schedAt,track:tid,channel:chPost}:{action:"unrelease",track:tid}})
+        .then(function(){toast("📅 «"+tt+"» "+fmtTk(schedAt)+" da chiqadi"+($("e-notify")&&$("e-notify").checked?" — xabar ham o'sha vaqtda ketadi.":"."),6000);loadPlan()})
+        .catch(function(x){toast("Reja saqlanmadi: "+x.message+". Qo'shiq "+fmtTk(schedAt)+" da chiqadi, lekin xabar avtomatik ketmaydi.",8000)});
+    }else if(o&&o.publishAt){api("api/admin/plan",{method:"POST",body:{action:"unrelease",track:t.id}}).then(loadPlan).catch(function(){})}
+    if(!schedAt&&$("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""},true)},300)}
     E.slides.forEach(function(x){if(x.k==="new")URL.revokeObjectURL(x.url)});
     closeEditor();
   }catch(e){
