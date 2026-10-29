@@ -188,6 +188,13 @@ footer{margin-top:18px;text-align:center}
 .lic div b{display:flex;justify-content:space-between;gap:8px}
 .lic div b span{font-family:var(--mono);color:var(--accent);font-weight:500}
 .lic div p{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
+/* ijro tili filtri */
+.lng-l{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--faint);margin-top:14px}
+.lngs{padding-top:8px}
+.chip .lc{font:800 10.5px var(--mono);background:var(--surface-2);border-radius:5px;padding:2px 5px;margin-right:6px;color:var(--muted)}
+.chip[aria-pressed="true"] .lc{background:rgba(0,0,0,.15);color:var(--accent-ink)}
+.chip .ln{font:500 11px var(--mono);opacity:.7}
+.lb{display:inline-block;font:800 10px var(--mono);padding:1px 5px;border-radius:4px;margin-right:6px;vertical-align:2px;background:#2E3A4A;color:#9FC5FF}
 /* ijtimoiy tarmoqlar qatori */
 .socl{display:flex;gap:8px;margin-top:14px}
 .sheet .socl{margin-top:0}
@@ -287,6 +294,7 @@ footer{margin-top:18px;text-align:center}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     <input id="q" type="search" enterkeyhint="search" placeholder="Nom, janr, BPM yoki tonallik" aria-label="Qidirish">
   </label>
+  <div class="lngw" id="lngw" hidden><div class="lng-l">Ijro tili</div><div class="chips lngs" id="lngs" role="group" aria-label="Ijro tili"></div></div>
   <div class="chips" id="chips" role="group" aria-label="Janr"></div>
   <div class="list" id="list" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
 
@@ -375,7 +383,12 @@ function keyLabel(k){return k?String(k).replace("#","♯"):"—"}
 function hueOf(id){var s=7;for(var i=0;i<id.length;i++)s=(s*31+id.charCodeAt(i))%360;return s}
 function safePath(p){return /^(music|media)\/[\w.\-]+$/.test(p||"")?p:""}
 
-var DATA={settings:{},tracks:[]},TRACKS=[],TAB="full",GENRE="Hammasi",Q="";
+var DATA={settings:{},tracks:[]},TRACKS=[],TAB="full",GENRE="Hammasi",LANG="all",Q="";
+/* ijro tillari: [kod, nomi, belgi]. Tili ko'rsatilmagan qo'shiq — o'zbekcha */
+var LANGS=[["uz","O'zbekcha","UZ"],["ru","Ruscha","RU"],["en","Inglizcha","EN"],["tr","Turkcha","TR"],["hi","Hindcha","HI"],["tj","Tojikcha","TJ"],["kk","Qozoqcha","KZ"],["ky","Qirg'izcha","KG"],["az","Ozarbayjoncha","AZ"],["ar","Arabcha","AR"],["fa","Forscha","FA"],["ko","Koreyscha","KO"],["other","Boshqa","••"]];
+function langOf(t){var l=t&&t.lang;return LANGS.some(function(x){return x[0]===l})?l:"uz"}
+function langName(t){var l=langOf(t);if(l==="other")return t.langName||"Boshqa";for(var i=0;i<LANGS.length;i++)if(LANGS[i][0]===l)return LANGS[i][1];return "O'zbekcha"}
+function langCode(t){var l=langOf(t);if(l==="other"){var n=String(t.langName||"").trim();return n?n.slice(0,2).toUpperCase():"••"}for(var i=0;i<LANGS.length;i++)if(LANGS[i][0]===l)return LANGS[i][2];return "UZ"}
 var cur={t:null,mode:"full",queue:[]};
 
 /* ---------- anonim statistika (admin → Statistika) ----------
@@ -463,8 +476,9 @@ function visible(){
   return TRACKS.filter(function(t){
     if(!inTab(t))return false;
     if(GENRE!=="Hammasi"&&t.genre!==GENRE)return false;
+    if(LANG!=="all"&&langOf(t)!==LANG)return false;
     if(!Q)return true;
-    var hay=[t.title,t.genre,t.mood,t.voice,t.bpm,t.key,keyLabel(t.key)].join(" ").toLowerCase();
+    var hay=[t.title,t.genre,t.mood,t.voice,t.bpm,t.key,keyLabel(t.key),langName(t),langCode(t)].join(" ").toLowerCase();
     return Q.split(/\s+/).every(function(w){return hay.indexOf(w)>=0});
   });
 }
@@ -640,7 +654,17 @@ function renderFeatured(){
   $("feat").innerHTML=carHTML(t)+'<div class="info"><button class="iconbtn on" type="button" data-play="'+t.id+'" data-mode="'+(t.intro?"intro":"full")+'" aria-label="Tinglash"></button><div><div class="eyebrow">'+(isNew(t)?"Yangi qo\'shiq":"Tavsiya")+'</div><h1>'+esc(t.title)+'</h1><div class="meta">'+esc(t.genre||"")+' · '+esc(t.voice||"")+(t.intro?' · intro '+fmt(t.intro.duration):'')+'</div></div><button class="btn sm primary" type="button" data-info="'+t.id+'">Batafsil</button></div>';
   syncButtons();
 }
-function renderChips(){
+function renderLangs(){
+  var have={};TRACKS.forEach(function(t){if(inTab(t))have[langOf(t)]=(have[langOf(t)]||0)+1});
+  var foreign=Object.keys(have).filter(function(k){return k!=="uz"}).length>0;
+  $("lngw").hidden=!foreign;if(!foreign){LANG="all";return}
+  if(LANG!=="all"&&!have[LANG])LANG="all";
+  var h='<button type="button" class="chip" data-lang="all" aria-pressed="'+(LANG==="all")+'">Hammasi</button>';
+  LANGS.forEach(function(x){if(have[x[0]])h+='<button type="button" class="chip" data-lang="'+x[0]+'" aria-pressed="'+(LANG===x[0])+'"><b class="lc">'+esc(x[2])+'</b>'+esc(x[1])+' <span class="ln">'+have[x[0]]+'</span></button>'});
+  $("lngs").innerHTML=h;
+}
+$("lngs").addEventListener("click",function(e){var b=e.target.closest("[data-lang]");if(!b)return;LANG=b.getAttribute("data-lang");renderLangs();renderList();hap()});
+function renderChips(){renderLangs();
   var g=["Hammasi"];TRACKS.forEach(function(t){if(t.genre&&g.indexOf(t.genre)<0)g.push(t.genre)});
   if(g.indexOf(GENRE)<0)GENRE="Hammasi";
   $("chips").innerHTML=g.map(function(x){return '<button type="button" class="chip" data-genre="'+esc(x)+'" aria-pressed="'+(x===GENRE)+'">'+esc(x)+'</button>'}).join("");
@@ -652,11 +676,11 @@ function renderList(){
   $("list").innerHTML=v.map(function(t){
     var m=modeFor(t),on=cur.t&&cur.t.id===t.id&&cur.mode===m;
     return '<button type="button" class="row'+(on?" cur":"")+(on&&au.paused?" paused":"")+'" data-row="'+t.id+'" aria-label="'+esc(t.title)+' tinglash">'+thumbHTML(t,on)+
-      '<span class="tx"><span class="nm">'+(isNew(t)?'<span class="tag new" style="margin-right:6px;padding:1px 7px;font-size:11px">YANGI</span>':'')+esc(t.title)+'</span><span class="mt">'+esc(t.genre||"")+' · <span class="mono">'+esc(t.bpm||"—")+' BPM · '+esc(keyLabel(t.key))+'</span>'+(t.voice?' · '+esc(t.voice):'')+'</span></span>'+
+      '<span class="tx"><span class="nm">'+(langOf(t)!=="uz"?'<span class="lb" title="'+esc(langName(t))+'">'+esc(langCode(t))+'</span>':'')+(isNew(t)?'<span class="tag new" style="margin-right:6px;padding:1px 7px;font-size:11px">YANGI</span>':'')+esc(t.title)+'</span><span class="mt">'+esc(t.genre||"")+' · <span class="mono">'+esc(t.bpm||"—")+' BPM · '+esc(keyLabel(t.key))+'</span>'+(t.voice?' · '+esc(t.voice):'')+'</span></span>'+
       (t.status==="sold"?'<span class="tag mute sold">Sotilgan</span>':(t.prices&&t.prices.basic?'<span class="tag acc sold">'+esc(t.prices.basic)+'</span>':''))+(SOC.on&&SOC.likes[t.id]?'<span class="sn" aria-label="'+SOC.likes[t.id]+' layk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.6-9.3C.9 7.7 3.2 4 6.8 4c2 0 3.6 1.1 5.2 3 1.6-1.9 3.2-3 5.2-3 3.6 0 5.9 3.7 4.4 7.2-2.1 4.7-9.6 9.3-9.6 9.3z"/></svg>'+SOC.likes[t.id]+'</span>':'')+'<span class="du">'+fmt(durOf(t,m))+'</span></button>';
   }).join("");
 }
-function setTab(t){TAB=t;$("tab-full").setAttribute("aria-selected",String(t==="full"));$("tab-intro").setAttribute("aria-selected",String(t==="intro"));renderList();hap()}
+function setTab(t){TAB=t;$("tab-full").setAttribute("aria-selected",String(t==="full"));$("tab-intro").setAttribute("aria-selected",String(t==="intro"));renderLangs();renderList();hap()}
 $("tab-full").addEventListener("click",function(){setTab("full")});
 $("tab-intro").addEventListener("click",function(){setTab("intro")});
 $("chips").addEventListener("click",function(e){var b=e.target.closest("[data-genre]");if(!b)return;GENRE=b.getAttribute("data-genre");renderChips();renderList();hap()});

@@ -220,7 +220,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v15</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v16</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -338,6 +338,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
           <div class="f"><label for="e-bpm">BPM</label><input class="field mono" id="e-bpm" inputmode="numeric" placeholder="Avtomatik"><div class="conf" id="c-bpm" hidden></div><div class="alts" id="a-bpm"></div></div>
           <div class="f"><label for="e-key">Tonallik</label><input class="field mono" id="e-key" placeholder="Avtomatik" autocomplete="off"><div class="conf" id="c-key" hidden></div><div class="alts" id="a-key"></div></div>
           <div class="f"><label for="e-genre">Janr</label><input class="field" id="e-genre" list="genres" autocomplete="off"><datalist id="genres"><option>Pop</option><option>Estrada</option><option>Milliy-pop</option><option>R&amp;B</option><option>Ballada</option><option>Hip-hop</option></datalist><div class="conf" id="c-genre" hidden></div><div class="alts" id="a-genre"></div></div>
+          <label class="f"><span>Ijro tili</span><select class="field" id="e-lang"></select><input class="field" id="e-langname" maxlength="24" placeholder="Til nomi, masalan: Uyg'urcha" hidden style="margin-top:6px"></label>
           <label class="f"><span>Kimga mos</span><select class="field" id="e-voice"><option>Ayol vokali</option><option>Erkak vokali</option><option>Duet</option><option>Rep / har qanday</option><option>Instrumental</option></select></label>
           <label class="f"><span>Kayfiyat (qisqa)</span><input class="field" id="e-mood" placeholder="Yengil, romantik"></label>
           <label class="f"><span>Holat</span><select class="field" id="e-status"><option value="open">Sotuvda</option><option value="sold">Eksklyuziv sotilgan</option></select></label>
@@ -748,6 +749,11 @@ async function notifyFlow(n,waitLive){
   NTF.busy=false;
 }
 
+/* ================= ijro tillari ================= */
+var LANGS=[["uz","O'zbekcha","UZ"],["ru","Ruscha","RU"],["en","Inglizcha","EN"],["tr","Turkcha","TR"],["hi","Hindcha","HI"],["tj","Tojikcha","TJ"],["kk","Qozoqcha","KZ"],["ky","Qirg'izcha","KG"],["az","Ozarbayjoncha","AZ"],["ar","Arabcha","AR"],["fa","Forscha","FA"],["ko","Koreyscha","KO"],["other","Boshqa","••"]];
+function lname(t){var l=t.lang||"uz";if(l==="other")return t.langName||"Boshqa";for(var i=0;i<LANGS.length;i++)if(LANGS[i][0]===l)return LANGS[i][1];return "O'zbekcha"}
+$("e-lang").addEventListener("change",function(){$("e-langname").hidden=this.value!=="other";if(this.value==="other")$("e-langname").focus()});
+
 /* ================= izohlar ================= */
 async function api(path,opt){
   opt=opt||{};var r=await fetch(path,{method:opt.method||"GET",headers:{Authorization:"Bearer "+CFG.token,"Content-Type":"application/json"},body:opt.body?JSON.stringify(opt.body):undefined,cache:"no-store"});
@@ -902,7 +908,7 @@ function renderList(){
   var up='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',dn='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   $("mlist").innerHTML=T.map(function(t,i){
     return '<div class="mrow"><div class="ord"><button type="button" data-up="'+i+'" aria-label="Yuqoriga">'+up+'</button><button type="button" data-down="'+i+'" aria-label="Pastga">'+dn+'</button></div>'+thumbHTML(t)+
-      '<div style="min-width:0"><div class="nm">'+esc(t.title)+'</div><div class="mt">'+(t.introOnly?'<span class="tag info">Intro</span>':'<span class="tag mute">Qo\'shiq</span>')+(t.status==="sold"?'<span class="tag mute">Sotilgan</span>':'<span class="tag ok">Sotuvda</span>')+(t.featured?'<span class="tag acc">Tavsiya</span>':'')+
+      '<div style="min-width:0"><div class="nm">'+(t.lang&&t.lang!=="uz"?'<span class="tag info" style="margin-right:6px">'+esc(lname(t))+'</span>':'')+esc(t.title)+'</div><div class="mt">'+(t.introOnly?'<span class="tag info">Intro</span>':'<span class="tag mute">Qo\'shiq</span>')+(t.status==="sold"?'<span class="tag mute">Sotilgan</span>':'<span class="tag ok">Sotuvda</span>')+(t.featured?'<span class="tag acc">Tavsiya</span>':'')+
       '<span>'+esc(t.genre||"—")+' · <span class="mono">'+esc(t.bpm||"—")+' BPM · '+esc(keyLabel(t.key))+' · '+fmt(t.duration)+'</span></span>'+(t.intro&&!t.introOnly?'<span class="mono">intro '+fmt(t.intro.duration)+'</span>':'')+(t.media&&t.media.length?'<span>'+t.media.length+' slayd</span>':'')+'</div></div>'+
       '<div class="ops"><button type="button" class="btn sm" data-feat="'+i+'">'+(t.featured?"Tavsiyadan olish":"Tavsiya qilish")+'</button><button type="button" class="btn sm" data-edit="'+i+'">Tahrirlash</button><button type="button" class="btn sm" data-repl="'+i+'">Almashtirish</button><button type="button" class="btn sm danger" data-del="'+i+'">O\'chirish</button></div></div>';
   }).join("");
@@ -1047,6 +1053,7 @@ function openEditor(t,replace){
   E={orig:t||null,replace:!!replace,file:null,buffer:null,dur:0,det:null,sel:null,fin:t&&t.intro&&t.intro.fin!=null?t.intro.fin:1,fout:t&&t.intro&&t.intro.fout!=null?t.intro.fout:2,slides:t?(t.media||[]).map(function(m){return {k:"keep",m:m,url:rawUrl(m.src)}}):[],srcMp3:false,fromExisting:false,stats:null,trimTouched:false};
   $("ed-title").textContent=!t?"Yangi qo'shiq":replace?"Almashtirish: "+t.title:"Tahrirlash: "+t.title;
   $("e-title").value=t?t.title:"";$("e-bpm").value=t&&t.bpm||"";$("e-key").value=t&&t.key||"";$("e-genre").value=t&&t.genre||"";
+  $("e-lang").innerHTML=LANGS.map(function(x){return '<option value="'+x[0]+'">'+esc(x[1])+'</option>'}).join("");$("e-lang").value=t&&t.lang||"uz";$("e-langname").value=t&&t.langName||"";$("e-langname").hidden=$("e-lang").value!=="other";
   $("e-voice").value=t&&t.voice||"Ayol vokali";$("e-mood").value=t&&t.mood||"";$("e-status").value=t&&t.status||"open";
   $("e-p1").value=t&&t.prices&&t.prices.basic||"";$("e-p2").value=t&&t.prices&&t.prices.exclusive||"";
   $(t&&t.introOnly?"k-intro":"k-full").checked=true;
@@ -1428,6 +1435,7 @@ $("ed-save").addEventListener("click",async function(){
     while(!o&&DATA.tracks.some(function(t){return t.id===id}))id=slug($("e-title").value)+"-"+stamp();
     var t=o?JSON.parse(JSON.stringify(o)):{id:id,added:new Date().toISOString().slice(0,10)};
     t.title=$("e-title").value.trim();t.genre=$("e-genre").value.trim();t.bpm=parseInt($("e-bpm").value,10)||null;t.key=$("e-key").value.trim().replace("♯","#")||null;
+    var lg=$("e-lang").value;if(lg&&lg!=="uz"){t.lang=lg;if(lg==="other"&&$("e-langname").value.trim())t.langName=$("e-langname").value.trim().slice(0,24);else delete t.langName}else{delete t.lang;delete t.langName}
     t.voice=$("e-voice").value;t.mood=$("e-mood").value.trim();t.status=$("e-status").value;
     t.prices={basic:$("e-p1").value.trim(),exclusive:$("e-p2").value.trim()};
     var base="music/"+slug(t.title)+"-"+st;
