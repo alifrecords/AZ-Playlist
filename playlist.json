@@ -3223,10 +3223,11 @@
       ],
       "media": [
         {
-          "type": "video",
-          "src": "media/azimxodjaev-music-shikastaman-pdfnhy-1.mp4"
+          "type": "image",
+          "src": "media/shikasta-tgo22r-1.jpg"
         }
-      ]
+      ],
+      "lang": "fa"
     }
   ]
 }
