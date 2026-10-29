@@ -220,7 +220,7 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v16</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v17</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -749,6 +749,46 @@ async function notifyFlow(n,waitLive){
   NTF.busy=false;
 }
 
+/* ================= havola kartochkasi (Facebook, WhatsApp, Telegram oldindan ko'rinishi) ================= */
+function loadMediaEl(type,url,at){
+  return new Promise(function(res,rej){
+    var el=document.createElement(type==="video"?"video":"img");el.crossOrigin="anonymous";
+    var to=setTimeout(function(){rej(new Error("muqova yuklanmadi"))},20000);
+    if(type==="video"){el.muted=true;el.playsInline=true;el.preload="auto";
+      el.onloadedmetadata=function(){try{el.currentTime=Math.min((at||0)+1.2,Math.max(0,(el.duration||2)-0.1))}catch(e){}};
+      el.onseeked=function(){clearTimeout(to);res(el)};}
+    else el.onload=function(){clearTimeout(to);res(el)};
+    el.onerror=function(){clearTimeout(to);rej(new Error("muqova o'qilmadi"))};el.src=url;
+  });
+}
+async function makeOgCard(t,type,url,at){
+  var el=await loadMediaEl(type,url,at),iw=el.videoWidth||el.naturalWidth,ih=el.videoHeight||el.naturalHeight;
+  try{await Promise.all([document.fonts.load('800 80px "Bricolage Grotesque"'),document.fonts.load('700 28px Manrope')])}catch(e){}
+  var W=1200,H=630,c=document.createElement("canvas");c.width=W;c.height=H;var g=c.getContext("2d");
+  function cover(dx,dy,dw,dh,yb){var s=Math.max(dw/iw,dh/ih),sw=dw/s,sh=dh/s,sx=(iw-sw)/2,sy=Math.max(0,(ih-sh)*(yb==null?.5:yb));g.drawImage(el,sx,sy,sw,sh,dx,dy,dw,dh)}
+  g.filter="blur(30px)";cover(-40,-40,W+80,H+80);g.filter="none";g.fillStyle="rgba(12,11,10,.64)";g.fillRect(0,0,W,H);
+  var cw=448,ch=560,cx=W-cw-48,cy=(H-ch)/2;
+  g.save();g.shadowColor="rgba(0,0,0,.55)";g.shadowBlur=36;g.shadowOffsetY=12;g.fillStyle="#000";rr(g,cx,cy,cw,ch,24);g.fill();g.restore();
+  g.save();rr(g,cx,cy,cw,ch,24);g.clip();cover(cx,cy,cw,ch,.3);g.restore();g.lineWidth=3;g.strokeStyle="#F2B33D";rr(g,cx,cy,cw,ch,24);g.stroke();
+  /* logo */
+  g.fillStyle="#F2B33D";rr(g,56,52,72,72,16);g.fill();g.fillStyle="#17140D";g.textAlign="center";g.textBaseline="middle";
+  g.font='800 29px "Bricolage Grotesque",Arial';g.fillText("AZ",92,82);g.fillRect(70,96,44,2);g.font='800 9px Manrope,Arial';g.fillText("MUSIC",92,107);
+  g.textAlign="left";g.textBaseline="alphabetic";g.fillStyle="#F2B33D";g.font='800 24px Manrope,Arial';g.fillText("AZIMXODJAYEV MUSIC",144,82);
+  g.fillStyle="#CDC4B4";g.font='700 20px Manrope,Arial';g.fillText("Mualliflik qo'shiqlari",144,110);
+  /* nom: 3 qatorgacha, sig'guncha kichrayadi */
+  var maxw=cx-56-40,size=84,lines=[];
+  for(;size>=40;size-=8){g.font='800 '+size+'px "Bricolage Grotesque",Arial';lines=[];var cur="";String(t.title||"").split(/\s+/).forEach(function(w){var tt=(cur+" "+w).trim();if(g.measureText(tt).width<=maxw)cur=tt;else{if(cur)lines.push(cur);cur=w}});if(cur)lines.push(cur);
+    if(lines.length<=3&&lines.every(function(l){return g.measureText(l).width<=maxw}))break}
+  g.fillStyle="#F7F2E8";var y=200+size*.85;lines.slice(0,3).forEach(function(l){g.fillText(l,56,y);y+=size*1.08});
+  var meta=[t.genre,t.bpm?t.bpm+" BPM":"",t.key].filter(Boolean).join(" · ");y+=6;
+  if(meta){g.fillStyle="#CDC4B4";g.font='700 28px Manrope,Arial';g.fillText(meta,56,y);y+=40}
+  var py=Math.max(y+10,H-150);g.font='800 28px Manrope,Arial';var bw=g.measureText("Bepul tinglang").width+90;
+  g.fillStyle="#F2B33D";rr(g,56,py,bw,58,29);g.fill();g.fillStyle="#17140D";g.beginPath();g.moveTo(80,py+17);g.lineTo(80,py+41);g.lineTo(100,py+29);g.fill();g.textBaseline="middle";g.fillText("Bepul tinglang",114,py+30);
+  g.textBaseline="alphabetic";g.fillStyle="#CDC4B4";g.font='700 22px Manrope,Arial';g.fillText("az-playlist.pages.dev",56,py+100);
+  return new Promise(function(res,rej){c.toBlob(function(b){b?res(b):rej(new Error("jpg"))},"image/jpeg",0.84)});
+}
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+
 /* ================= ijro tillari ================= */
 var LANGS=[["uz","O'zbekcha","UZ"],["ru","Ruscha","RU"],["en","Inglizcha","EN"],["tr","Turkcha","TR"],["hi","Hindcha","HI"],["tj","Tojikcha","TJ"],["kk","Qozoqcha","KZ"],["ky","Qirg'izcha","KG"],["az","Ozarbayjoncha","AZ"],["ar","Arabcha","AR"],["fa","Forscha","FA"],["ko","Koreyscha","KO"],["other","Boshqa","••"]];
 function lname(t){var l=t.lang||"uz";if(l==="other")return t.langName||"Boshqa";for(var i=0;i<LANGS.length;i++)if(LANGS[i][0]===l)return LANGS[i][1];return "O'zbekcha"}
@@ -922,7 +962,7 @@ $("mlist").addEventListener("click",function(e){
   if(b.hasAttribute("data-repl")){openEditor(T[+b.getAttribute("data-repl")],true);return}
   if(b.hasAttribute("data-del")){askDelete(T[+b.getAttribute("data-del")])}
 });
-function trackPaths(t){var p=[t.audio];if(t.intro&&t.intro.file&&t.intro.file!==t.audio)p.push(t.intro.file);(t.media||[]).forEach(function(m){p.push(m.src)});return p.filter(Boolean)}
+function trackPaths(t){var p=[t.audio];if(t.intro&&t.intro.file&&t.intro.file!==t.audio)p.push(t.intro.file);(t.media||[]).forEach(function(m){p.push(m.src)});if(t.og)p.push(t.og);return p.filter(Boolean)}
 function askDelete(t){
   if(pjson()!==SAVED){toast("Avval saqlanmagan o'zgarishlarni saqlang yoki bekor qiling.");return}
   openModal('<h2 id="m-title">Materialni o\'chirish</h2><p style="margin:0;color:var(--muted)"><b style="color:var(--fg)">"'+esc(t.title)+'"</b> va uning barcha fayllari (audio, intro, slaydlar) repodan o\'chiriladi. Sayt 1–2 daqiqada yangilanadi.</p>'+
@@ -1472,6 +1512,17 @@ $("ed-save").addEventListener("click",async function(){
     });
     (o&&o.media||[]).forEach(function(m){if(!newMedia.some(function(n){return n.src===m.src}))del.push(m.src)});
     t.media=newMedia;
+    /* havola kartochkasi (1200×630): muqova, nom yoki ma'lumot o'zgarsa qayta yasaladi */
+    var m0=newMedia[0],o0=o&&o.media&&o.media[0];
+    var ogStale=!o||!o.og||!o0||!m0||m0.src!==o0.src||o.title!==t.title||o.genre!==t.genre||o.bpm!==t.bpm||o.key!==t.key;
+    if(m0&&ogStale){
+      try{
+        logLine("havola kartochkasi yasalmoqda…");
+        var x0=seq[0],srcUrl=x0.k==="new"?x0.url:rawUrl(m0.src);
+        var ogb=await makeOgCard(t,m0.type,srcUrl,m0.start||0);
+        var op="media/og-"+t.id+"-"+st+".jpg";files.push({path:op,data:ogb});if(o&&o.og&&o.og!==op)del.push(o.og);t.og=op;
+      }catch(oe){logLine("  kartochka yasalmadi ("+oe.message+") — havola umumiy rasm bilan chiqadi")}
+    }else if(!m0&&o&&o.og){del.push(o.og);delete t.og}
     if(o){var idx=DATA.tracks.findIndex(function(x){return x.id===o.id});DATA.tracks[idx]=t}else DATA.tracks.unshift(t);
     var used2={};DATA.tracks.forEach(function(x){trackPaths(x).forEach(function(p){used2[p]=1})});
     del.filter(function(p,i){return p&&del.indexOf(p)===i&&!used2[p]&&!files.some(function(f){return f.path===p})}).forEach(function(p){files.push({path:p,data:null})});

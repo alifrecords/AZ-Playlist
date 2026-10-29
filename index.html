@@ -829,17 +829,20 @@ $("sh-order").addEventListener("click",function(){
   if(ci.text)openTg(ci.url+"?text="+encodeURIComponent(msg));
   else{try{navigator.clipboard&&navigator.clipboard.writeText(msg)}catch(e){}toast("Guruh ochilmoqda. Qo'shiq ma'lumoti nusxalandi — guruhga joylab yuboring.",6000);openTg(ci.url)}
 });
-function linkFor(id){
+/* Sayt havolasi: har yuborishda yangi «s» kodi — havola kartochkasida har safar boshqa muqova chiqadi */
+function siteLink(id){var sd=Math.random().toString(36).slice(2,8);return location.origin+"/?"+(id?"ref="+encodeURIComponent(id)+"&":"")+"s="+sd+(id?"#t-"+id:"")}
+function tgAppLink(id){
   var st=DATA.settings||{},ba=String(st.botApp||"").trim().replace(/^(https?:\/\/)?(www\.)?(t\.me|telegram\.me)\//i,"https://t.me/").replace(/\/+$/,"");
-  if(/^https:\/\/t\.me\/[\w\/]+$/.test(ba))return ba+(id?"?startapp="+encodeURIComponent(id):"");
-  return location.origin+location.pathname+(id?"?ref="+encodeURIComponent(id)+"#t-"+id:"");
+  return /^https:\/\/t\.me\/[\w\/]+$/.test(ba)?ba+(id?"?startapp="+encodeURIComponent(id):""):null;
 }
+function linkFor(id){return siteLink(id)}
 function share(id,title){
   AN.share(id);
-  var url=linkFor(id),text=title?"\""+title+"\" — "+((DATA.settings||{}).artist||"AZIMXODJAYEV"):"Azimxodjayev Music playlisti";
-  var tgShare="https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text);
+  var url=siteLink(id),app=tgAppLink(id),text=title?"🎵 \""+title+"\" — "+((DATA.settings||{}).artist||"AZIMXODJAYEV MUSIC"):"🎵 AZ MUSIC — tayyor hit qo'shiqlar";
+  var tgText=text+(app?"\n▶ Telegram'da ochish: "+app:"");
+  var tgShare="https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(tgText);
   if(inTg){tg.openTelegramLink(tgShare);return}
-  if(navigator.share){navigator.share({title:text,url:url}).catch(function(){});return}
+  if(navigator.share){navigator.share({title:text,text:text,url:url}).catch(function(){});return}
   try{navigator.clipboard.writeText(url).then(function(){toast("Havola nusxalandi.")},function(){openTg(tgShare)})}catch(e){openTg(tgShare)}
 }
 $("sh-share").addEventListener("click",function(){if(cur.t)share(cur.t.id,cur.t.title)});
@@ -893,13 +896,26 @@ var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="
 var isIPad=isIOS&&(/ipad/i.test(navigator.userAgent)||navigator.platform==="MacIntel");
 var isIOSSafari=isIOS&&/safari/i.test(navigator.userAgent)&&!/crios|fxios|edgios|opios/i.test(navigator.userAgent);
 var isAndroid=/android/i.test(navigator.userAgent);
+/* Instagram, Facebook, Messenger va boshqa ilovalarning ichki brauzeri: u yerdan ilova o'rnatib bo'lmaydi */
+var inApp=!inTg&&/Instagram|FBAN|FBAV|FB_IAB|FBIOS|Messenger|Line\/|TikTok|musical_ly|Snapchat/i.test(navigator.userAgent);
+var inAppName=/Instagram/i.test(navigator.userAgent)?"Instagram":/FBAN|FBAV|FB_IAB|FBIOS|Messenger/i.test(navigator.userAgent)?"Facebook":/TikTok|musical_ly/i.test(navigator.userAgent)?"TikTok":"Ilova";
 var deferredPrompt=null,fromTgInstall=false;
 try{var qs=new URLSearchParams(location.search);fromTgInstall=qs.get("install")==="1";if(fromTgInstall){lsSet("az_from_tg","1");history.replaceState(null,"",location.pathname+location.hash)}}catch(e){}
 if("serviceWorker" in navigator&&window.isSecureContext){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 var SHARE_IOS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l4-4 4 4M12 3v13"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>',PLUS_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
 function igOpen(){
   var body=$("ig-body"),go=$("ig-go"),ar=$("ig-arrow"),ig=$("ig");go.hidden=true;ar.hidden=true;ig.classList.remove("top");
-  if(inTg){
+  if(inApp){
+    var ext=location.origin+location.pathname+"?install=1"+(cur.t?"#t-"+cur.t.id:"");
+    if(isAndroid){
+      body.innerHTML='<p class="note" style="margin:0;font-size:14px;color:var(--muted)">'+inAppName+' ichida ilova o\'rnatib bo\'lmaydi. Tugmani bosing — sayt <b>Chrome</b>\'da ochiladi va o\'rnatish oynasi o\'zi chiqadi.</p>';
+      go.hidden=false;go.textContent="Chrome'da ochish";
+      go.onclick=function(){AN.tgInstall();lsSet("az_from_tg","1");igClose();location.href="intent://"+location.host+location.pathname+"?install=1"+(cur.t?"#t-"+cur.t.id:"")+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(ext)+";end"};
+    }else{
+      body.innerHTML='<ol><li>O\'ng tepadagi <b>⋯</b> (uch nuqta) belgisini bosing</li><li><b>Tashqi brauzerda ochish</b> (Open in external browser) ni tanlang</li><li>Safari\'da ochilgach, <i>'+SHARE_IOS+'</i> <b>Ulashish</b> → <b>Bosh ekranga qo\'shish</b></li></ol>';
+      ig.classList.add("top");ar.hidden=false;
+    }
+  }else if(inTg){
     body.innerHTML='<p class="note" style="margin:0;font-size:14px;color:var(--muted)">Telegram ichida ilova o\'rnatib bo\'lmaydi. Tugmani bosing — sayt telefoningiz brauzerida ('+(isIOS?"Safari":"Chrome")+') ochiladi va o\'rnatish oynasi o\'zi chiqadi.</p>';
     go.hidden=false;go.textContent=isIOS?"Safari'da ochish":"Brauzerda ochish";
     go.onclick=function(){AN.tgInstall();var u=location.origin+location.pathname+"?install=1"+(cur.t?"#t-"+cur.t.id:"");
@@ -922,11 +938,11 @@ $("ig-close").addEventListener("click",function(){igClose();lsSet("az_ig_no",Str
 $("ig").addEventListener("click",function(e){if(e.target===this)igClose()});
 if(!standalone){
   window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredPrompt=e;$("install").hidden=false;if(fromTgInstall&&!$("ig").hidden)igOpen()});
-  if(isIOS||inTg)$("install").hidden=false;
+  if(isIOS||inTg||inApp)$("install").hidden=false;
   /* Telegram'dan «Brauzerda ochish» bilan kelganlarga yo'riqnoma darhol ko'rsatiladi */
   if(fromTgInstall)setTimeout(igOpen,isAndroid?1800:600);
   /* Telegram ichida: bir marta taklif (40 soniyadan keyin, qo'shiq ochiq bo'lmasa) */
-  else if(inTg&&!lsGet("az_ig_tg")){setTimeout(function(){if($("sheet").hidden&&$("ask").hidden&&$("ig").hidden){lsSet("az_ig_tg","1");igOpen()}},40000)}
+  else if((inTg||inApp)&&!lsGet("az_ig_tg")){setTimeout(function(){if($("sheet").hidden&&$("ask").hidden&&$("ig").hidden){lsSet("az_ig_tg","1");igOpen()}},40000)}
 }
 window.addEventListener("appinstalled",function(){AN.install();$("install").hidden=true;deferredPrompt=null;igClose();toast("AZ MUSIC telefoningizga o'rnatildi.")});
 $("install").addEventListener("click",function(){

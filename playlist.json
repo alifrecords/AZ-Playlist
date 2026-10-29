@@ -176,7 +176,8 @@
           "type": "image",
           "src": "media/ha-men-devona-thw1xr-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-ha-men-devona-thw1xr.jpg"
     },
     {
       "id": "armon-th4wyq",
@@ -329,7 +330,8 @@
           "type": "image",
           "src": "media/armon-th4wyq-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-armon-th4wyq.jpg"
     },
     {
       "id": "v2-kagaz-ke-baadshah-tg3qbp",
@@ -479,7 +481,8 @@
           "type": "image",
           "src": "media/v2-kagaz-ke-baadshah-tg3qbp-2.jpg"
         }
-      ]
+      ],
+      "og": "media/og-v2-kagaz-ke-baadshah-tg3qbp.jpg"
     },
     {
       "id": "kagaz-ke-baadshah-te49kq",
@@ -625,7 +628,8 @@
           "type": "image",
           "src": "media/kagaz-ke-baadshah-te49kq-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-kagaz-ke-baadshah-te49kq.jpg"
     },
     {
       "id": "shunchalar-chiroylimisan-td9pam",
@@ -778,7 +782,8 @@
           "type": "image",
           "src": "media/shunchalar-chiroylimisan-td9pam-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-shunchalar-chiroylimisan-td9pam.jpg"
     },
     {
       "id": "madina-tcijmn",
@@ -931,7 +936,8 @@
           "type": "image",
           "src": "media/madina-tcijmn-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-madina-tcijmn.jpg"
     },
     {
       "id": "men-ozgardim-tblr0h",
@@ -1084,7 +1090,8 @@
           "type": "image",
           "src": "media/men-ozgardim-tblr0h-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-men-ozgardim-tblr0h.jpg"
     },
     {
       "id": "seni-oylayman-tb2gij",
@@ -1237,7 +1244,8 @@
           "type": "image",
           "src": "media/seni-oylayman-tb2gij-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-seni-oylayman-tb2gij.jpg"
     },
     {
       "id": "qor-ostida-tapm7w",
@@ -1390,7 +1398,8 @@
           "type": "image",
           "src": "media/qor-ostida-tapm7w-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-qor-ostida-tapm7w.jpg"
     },
     {
       "id": "qarab-qoy-t9w9p2",
@@ -1543,7 +1552,8 @@
           "type": "image",
           "src": "media/qarab-qoy-t9w9p2-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-qarab-qoy-t9w9p2.jpg"
     },
     {
       "id": "sogindim-seni-spfsew",
@@ -1696,7 +1706,8 @@
           "type": "image",
           "src": "media/sogindim-seni-spfsew-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-sogindim-seni-spfsew.jpg"
     },
     {
       "id": "yuragim-sp938w",
@@ -1849,7 +1860,8 @@
           "type": "image",
           "src": "media/yuragim-sp938w-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-yuragim-sp938w.jpg"
     },
     {
       "id": "erkak-sno3tp",
@@ -2002,7 +2014,8 @@
           "type": "image",
           "src": "media/erkak-sno3tp-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-erkak-sno3tp.jpg"
     },
     {
       "id": "dost-smspxc",
@@ -2155,7 +2168,8 @@
           "type": "video",
           "src": "media/dost-smspxc-1.mp4"
         }
-      ]
+      ],
+      "og": "media/og-dost-smspxc.jpg"
     },
     {
       "id": "achinaman-skrea5",
@@ -2308,7 +2322,8 @@
           "type": "video",
           "src": "media/achinaman-skyxyt-1.mp4"
         }
-      ]
+      ],
+      "og": "media/og-achinaman-skrea5.jpg"
     },
     {
       "id": "dunyo-jinnisi-sk0i4p",
@@ -2461,7 +2476,8 @@
           "type": "video",
           "src": "media/dunyo-jinnisi-sk0i4p-1.mp4"
         }
-      ]
+      ],
+      "og": "media/og-dunyo-jinnisi-sk0i4p.jpg"
     },
     {
       "id": "yiglama-mayus-onam-sg8gr7",
@@ -2614,7 +2630,8 @@
           "type": "image",
           "src": "media/yiglama-mayus-onam-sg8gr7-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-yiglama-mayus-onam-sg8gr7.jpg"
     },
     {
       "id": "farzona-sefy8g",
@@ -2767,7 +2784,8 @@
           "type": "video",
           "src": "media/farzona-sefy8g-1.mp4"
         }
-      ]
+      ],
+      "og": "media/og-farzona-sefy8g.jpg"
     },
     {
       "id": "yolingda-men-sb7icp",
@@ -2920,7 +2938,8 @@
           "type": "video",
           "src": "media/yolingda-men-sb7icp-1.mp4"
         }
-      ]
+      ],
+      "og": "media/og-yolingda-men-sb7icp.jpg"
     },
     {
       "id": "aqilsizdan-aqilli-saylab-oldilaring-q62or6",
@@ -3073,7 +3092,8 @@
           "type": "video",
           "src": "media/aqilsizdan-aqilli-saylab-oldilaring-q62or6-1.mp4"
         }
-      ]
+      ],
+      "og": "media/og-aqilsizdan-aqilli-saylab-oldilaring-q62or6.jpg"
     },
     {
       "id": "sabrin-dalgalanmalar-sfniam",
@@ -3226,7 +3246,8 @@
           "type": "image",
           "src": "media/sabrin-dalgalanmalar-sfniam-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-sabrin-dalgalanmalar-sfniam.jpg"
     },
     {
       "id": "azimxodjayev-music-armon-q5jiva",
@@ -3379,7 +3400,8 @@
           "type": "image",
           "src": "media/armon-q6cj0f-1.jpg"
         }
-      ]
+      ],
+      "og": "media/og-azimxodjayev-music-armon-q5jiva.jpg"
     },
     {
       "id": "azimxodjaev-music-shikastaman-pdfnhy",
@@ -3533,7 +3555,8 @@
           "src": "media/shikasta-tgo22r-1.jpg"
         }
       ],
-      "lang": "fa"
+      "lang": "fa",
+      "og": "media/og-azimxodjaev-music-shikastaman-pdfnhy.jpg"
     }
   ]
 }
