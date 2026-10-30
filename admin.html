@@ -270,7 +270,7 @@ html.mob #mlist{padding-bottom:70px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v22</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v23</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -593,7 +593,7 @@ async function putFileRobust(path,blob,log,onPart){
   var chunk=chunkGet();
   for(;;){
     try{
-      if(blob.size<=chunk){var sha=await putBlob(blob,log);if(onPart)onPart(1,1);return [{path:path,sha:sha}]}
+      if(blob.size<=chunk){var sha=await putBlob(blob,log);if(onPart)onPart(1,1);if(chunk<CHUNK_MAX)chunkSet(Math.min(CHUNK_MAX,chunk*2));return [{path:path,sha:sha}]}
       var n=Math.ceil(blob.size/chunk),pad=function(x){return String(x).padStart(3,"0")},out=new Array(n),next=0,done=0;
       log("  "+n+" bo'lakda yuborilmoqda ("+Math.round(chunk/1024)+" KB, 2 tadan parallel)");
       var worker=async function(){
@@ -604,6 +604,7 @@ async function putFileRobust(path,blob,log,onPart){
         }
       };
       await Promise.all([worker(),worker()]);
+      if(chunk<CHUNK_MAX)chunkSet(Math.min(CHUNK_MAX,chunk*2)); /* ishladi — keyingi safar kattaroq bo'lak sinab ko'riladi */
       return out;
     }catch(e){
       if(!isNetErr(e)||chunk<=CHUNK_MIN)throw e;
@@ -930,6 +931,14 @@ async function notifyFlow(n,waitLive){
       }
       if(!live)say("Sayt 5 daqiqada yangilanmadi — xabar baribir yuborilmoqda…");
       await wait(15000); /* Cloudflare keshi hamma joyda yangilanishi uchun */
+      if(n.image){ /* rasm bo'laklab yuklangan bo'lsa, GitHub boti yig'ib, sayt yangilanguncha kutamiz */
+        var t1=Date.now();
+        while(Date.now()-t1<6*60*1000){
+          try{var ri=await fetch(n.image+"?t="+Date.now(),{cache:"no-store"});if(ri.ok&&/^image\//i.test(ri.headers.get("content-type")||""))break}catch(e){}
+          say("Muqova rasmi saytga chiqishi kutilmoqda… "+Math.round((Date.now()-t1)/1000)+" s (sahifani yopmang)");
+          await wait(10000);
+        }
+      }
     }
     var st=await api("api/admin/notify",{method:"POST",body:Object.assign({action:"start"},n)});
     var tot={sent:0,failed:0,removed:0};

@@ -2,7 +2,7 @@
 // Ochiq manzil: faqat oldindan rejalashtirilgan, vaqti kelgan ishlarni bajaradi, boshqa hech narsa qilmaydi.
 // Har chaqiruvda bitta partiya; {more:true} — ish qolgan, yana chaqirish kerak.
 import { guard, json, kvSet } from "./_db.js";
-import { sendBatch } from "./_send.js";
+import { sendBatch, pickImage, trackImages } from "./_send.js";
 
 const STAGES = ["push", "tg", "channel"];
 
@@ -25,10 +25,16 @@ async function handle({ request, env }) {
       await env.DB.prepare("UPDATE plan SET status = 'pending', lock = 0 WHERE id = ?").bind(row.id).run();
       return json({ more: false, waiting: row.id });
     }
-    const img = t.og || ((t.media || []).find((m) => m.type === "image") || {}).src || null;
-    n = { id: row.id, title: "🎵 Yangi qo'shiq: " + t.title, body: [t.genre, t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).join(" · "), track: t.id, url: "/#t-" + t.id, image: img ? origin + "/" + img : null, ts: now };
+    const imgs = trackImages(t);
+    let img = row.progress ? null : await pickImage(env, origin, imgs);
+    if (!row.progress && imgs.length && !img && now - row.at < 20 * 60 * 1000) {
+      // rasm hali saytga chiqmagan (bo'laklar yig'ilmoqda) — 20 daqiqagacha kutamiz
+      await env.DB.prepare("UPDATE plan SET status = 'pending', lock = 0 WHERE id = ?").bind(row.id).run();
+      return json({ more: false, waiting: row.id });
+    }
+    n = { id: row.id, title: "🎵 Yangi qo'shiq: " + t.title, body: [t.genre, t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).join(" · "), track: t.id, url: "/#t-" + t.id, image: img, ts: now };
   } else {
-    n = { id: row.id, title: row.title || "AZ MUSIC", body: row.body || "", track: row.track || "", url: row.track ? "/#t-" + row.track : "/", image: row.image ? origin + "/" + row.image : null, ts: now };
+    n = { id: row.id, title: row.title || "AZ MUSIC", body: row.body || "", track: row.track || "", url: row.track ? "/#t-" + row.track : "/", image: row.progress ? null : await pickImage(env, origin, [row.image].concat(trackImages((pl.tracks || []).find((x) => x.id === row.track)))), ts: now };
   }
   const ch = st.channel || {};
   const chm = String(ch.url || "").match(/(?:t|telegram)\.me\/([A-Za-z0-9_]{4,32})/i) || String(ch.url || "").match(/^@([A-Za-z0-9_]{4,32})$/);
@@ -36,7 +42,8 @@ async function handle({ request, env }) {
 
   let p = {};
   try { p = JSON.parse(row.progress || "{}"); } catch (e) {}
-  if (!p.stage) { p = { stage: "push", after: 0, sent: 0, failed: 0, removed: 0 }; await kvSet(env.DB, "last_notif", JSON.stringify(n)); }
+  if (!p.stage) { p = { stage: "push", after: 0, sent: 0, failed: 0, removed: 0, image: n.image }; await kvSet(env.DB, "last_notif", JSON.stringify(n)); }
+  else n.image = p.image || null;
   if (p.stage === "channel" && !(row.channel && opt.channel)) p.stage = "done";
   if (p.stage !== "done") {
     const r = await sendBatch(env, origin, n, p.stage, p.after, opt);

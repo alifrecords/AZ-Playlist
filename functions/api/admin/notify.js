@@ -4,7 +4,7 @@
 // POST {action:"send", kind:"push"|"tg", after} — keyingi partiyani yuboradi (Cloudflare bepul tarifida
 //       bitta so'rovda 50 tagacha tashqi so'rov mumkin, shuning uchun partiyalab)
 import { guard, json, readJson, isAdmin, kvGet, kvSet, ID } from "../_db.js";
-import { sendBatch } from "../_send.js";
+import { sendBatch, pickImage, trackImages } from "../_send.js";
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, n);
 
@@ -21,7 +21,9 @@ export const onRequestPost = guard(async ({ request, env }) => {
   const origin = new URL(request.url).origin;
   if (b.action === "start") {
     const track = ID.test(b.track || "") ? b.track : "";
-    const img = /^media\/[\w.\-]+\.(jpe?g|png|webp|gif)$/i.test(b.image || "") ? origin + "/" + b.image : null;
+    let tr = null;
+    if (track) { try { const r = await env.ASSETS.fetch(new URL("/playlist.json", origin)); if (r.ok) tr = ((await r.json()).tracks || []).find((x) => x.id === track) || null; } catch (e) {} }
+    const img = await pickImage(env, origin, [b.image].concat(trackImages(tr)));
     const n = { id: Date.now(), title: clean(b.title, 80) || "AZ MUSIC", body: clean(b.body, 180), track, url: track ? "/#t-" + track : "/", image: img, ts: Date.now() };
     await kvSet(env.DB, "last_notif", JSON.stringify(n));
     const [p, t] = await env.DB.batch([env.DB.prepare("SELECT COUNT(*) n FROM push_subs"), env.DB.prepare("SELECT COUNT(*) n FROM tg_subs")]);

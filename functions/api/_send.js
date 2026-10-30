@@ -16,6 +16,24 @@ async function tgPost(api, chat, n, text, markup) {
   return fetch(api + "sendMessage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, reply_markup: markup, disable_web_page_preview: true }) });
 }
 
+// Saytda haqiqatan bor rasmni tanlaydi (bo'laklab yuklangan fayl hali yig'ilmagan bo'lishi mumkin).
+// Pages yo'q faylga index.html qaytaradi, shuning uchun turi image/* bo'lishi shart.
+const IMG = /^media\/[\w.\-]+\.(jpe?g|png|webp|gif)$/i;
+export function trackImages(t) {
+  if (!t) return [];
+  return [].concat((t.media || []).filter((m) => m.type === "image").map((m) => m.src), t.og || []).filter((x) => IMG.test(x || ""));
+}
+export async function pickImage(env, origin, paths) {
+  for (const p of paths) {
+    if (!IMG.test(p || "")) continue;
+    try {
+      const r = await env.ASSETS.fetch(new URL("/" + p, origin));
+      if (r.ok && /^image\//i.test(r.headers.get("content-type") || "")) return origin + "/" + p;
+    } catch (e) {}
+  }
+  return null;
+}
+
 export async function sendBatch(env, origin, n, kind, after, opt = {}) {
   let sent = 0, failed = 0, removed = 0;
   after = Math.max(0, parseInt(after, 10) || 0);
