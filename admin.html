@@ -270,7 +270,7 @@ html.mob #mlist{padding-bottom:70px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v21</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v22</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -913,7 +913,7 @@ $("sb-send").addEventListener("click",function(){
   var title=$("sb-title").value.trim(),body=$("sb-body").value.trim(),tr=$("sb-track").value;
   if(!title){toast("Sarlavha yozing.");$("sb-title").focus();return}
   openModal('<h2 id="m-title">Xabar yuborilsinmi?</h2><div class="acm"><b>'+esc(title)+'</b><p>'+esc(body)+'</p></div><p class="note" style="margin:0">'+(NTF.total!=null?NTF.total+" ta obunachiga":"Barcha obunachilarga")+' yuboriladi. Qaytarib bo\'lmaydi.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" id="sb-ok">Yuborish</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
-  $("sb-ok").onclick=function(){closeModal();var t=tr&&(DATA.tracks||[]).filter(function(x){return x.id===tr})[0];notifyFlow({track:tr,title:title,body:body,image:t?((t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""):""},false)};
+  $("sb-ok").onclick=function(){closeModal();var t=tr&&(DATA.tracks||[]).filter(function(x){return x.id===tr})[0];notifyFlow({track:tr,title:title,body:body,image:t?((t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||t.og||""):""},false)};
 });
 /* sayt yangilanishini kutadi (yangi qo'shiq jonli saytda paydo bo'lguncha), keyin partiyalab yuboradi */
 async function notifyFlow(n,waitLive){
@@ -1739,7 +1739,7 @@ $("ed-save").addEventListener("click",async function(){
         .then(function(){toast("📅 «"+tt+"» "+fmtTk(schedAt)+" da chiqadi"+($("e-notify")&&$("e-notify").checked?" — xabar ham o'sha vaqtda ketadi.":"."),6000);loadPlan()})
         .catch(function(x){toast("Reja saqlanmadi: "+x.message+". Qo'shiq "+fmtTk(schedAt)+" da chiqadi, lekin xabar avtomatik ketmaydi.",8000)});
     }else if(o&&o.publishAt){api("api/admin/plan",{method:"POST",body:{action:"unrelease",track:t.id}}).then(loadPlan).catch(function(){})}
-    if(!schedAt&&$("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""},true)},300)}
+    if(!schedAt&&$("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||nt.og||""},true)},300)}
     E.slides.forEach(function(x){if(x.k==="new")URL.revokeObjectURL(x.url)});
     closeEditor();
   }catch(e){

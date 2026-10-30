@@ -4,6 +4,18 @@ import { vapidKeys, vapidAuth } from "./_db.js";
 
 export const PUSH_BATCH = 40, TG_BATCH = 25;
 
+// Rasm bilan yuboradi; Telegram rasmni ololmasa — matn bilan qayta yuboradi (obunachi o'chirilmaydi)
+async function tgPost(api, chat, n, text, markup) {
+  if (n.image) {
+    const r = await fetch(api + "sendPhoto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, photo: n.image, caption: text, reply_markup: markup }) });
+    if (r.ok) return r;
+    let d = "";
+    try { d = (await r.clone().json()).description || ""; } catch (e) {}
+    if (!(r.status === 400 && /photo|file|url|image|wrong type|webpage/i.test(d))) return r;
+  }
+  return fetch(api + "sendMessage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, reply_markup: markup, disable_web_page_preview: true }) });
+}
+
 export async function sendBatch(env, origin, n, kind, after, opt = {}) {
   let sent = 0, failed = 0, removed = 0;
   after = Math.max(0, parseInt(after, 10) || 0);
@@ -35,8 +47,7 @@ export async function sendBatch(env, origin, n, kind, after, opt = {}) {
     const link = /^https:\/\/t\.me\/[\w\/]+$/.test(ba) && n.track ? ba + "?startapp=" + n.track : origin + n.url;
     const text = n.title + (n.body ? "\n" + n.body : "") + "\n\n▶ Tinglash: pastdagi tugma";
     const markup = { inline_keyboard: [[{ text: "▶ Tinglash", url: link }]] };
-    const body = n.image ? { chat_id: chat, photo: n.image, caption: text, reply_markup: markup } : { chat_id: chat, text, reply_markup: markup, disable_web_page_preview: true };
-    const r = await fetch(api + (n.image ? "sendPhoto" : "sendMessage"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = await tgPost(api, chat, n, text, markup);
     let msg = "";
     if (!r.ok) { try { const j = await r.json(); msg = /not enough rights|administrator|chat not found|member/i.test(j.description || "") ? "bot kanalda admin emas" : (j.description || "").slice(0, 80); } catch (e) {} }
     return { done: true, sent: r.ok ? 1 : 0, failed: r.ok ? 0 : 1, removed: 0, next: 0, msg };
@@ -51,8 +62,7 @@ export async function sendBatch(env, origin, n, kind, after, opt = {}) {
     const markup = { inline_keyboard: [[{ text: "▶ Tinglash", web_app: { url: origin + n.url } }]] };
     await Promise.all(rows.map(async (row) => {
       try {
-        const body = n.image ? { chat_id: row.uid, photo: n.image, caption: text, reply_markup: markup } : { chat_id: row.uid, text, reply_markup: markup, disable_web_page_preview: true };
-        const r = await fetch(api + (n.image ? "sendPhoto" : "sendMessage"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const r = await tgPost(api, row.uid, n, text, markup);
         if (r.ok) sent++;
         else if (r.status === 403 || r.status === 400) { removed++; await env.DB.prepare("DELETE FROM tg_subs WHERE uid = ?").bind(row.uid).run(); }
         else failed++;
