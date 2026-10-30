@@ -36,8 +36,8 @@
       "mood": "Onajonim",
       "status": "open",
       "prices": {
-        "basic": "200$",
-        "exclusive": "300$"
+        "basic": "150$",
+        "exclusive": "200$"
       },
       "audio": "music/ona-vhlhuy.mp3",
       "duration": 223.2,
@@ -166,14 +166,14 @@
       "media": [
         {
           "type": "image",
-          "src": "media/ona-vhlhuy-1.jpg"
+          "src": "media/ona-vhvw9m-1.jpg"
         },
         {
           "type": "image",
-          "src": "media/ona-vhlhuy-2.jpg"
+          "src": "media/ona-vhvw9m-2.jpg"
         }
       ],
-      "og": "media/og-ona-vhlhuy-vhlhuy.jpg"
+      "og": "media/og-ona-vhlhuy-vhvw9m.jpg"
     },
     {
       "id": "umir-yoli-musicsong-vdhu3d",
