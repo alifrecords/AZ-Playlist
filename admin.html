@@ -270,7 +270,7 @@ html.mob #mlist{padding-bottom:70px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v23</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v24</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -461,6 +461,7 @@ html.mob #mlist{padding-bottom:70px}
         <div class="f" id="q-wrap" hidden><label for="e-kbps">Saytga chiqadigan MP3 sifati</label><select class="field" id="e-kbps"></select><span class="note" id="q-est"></span></div>
         <div id="report"></div>
         <div class="pubw"><label class="f"><span>📅 Chiqish vaqti (ixtiyoriy)</span><input class="field" type="datetime-local" id="e-pub"></label><button class="btn sm" type="button" id="e-pub-clr">Hozir chiqsin</button><span class="note" id="e-pub-h">Bo'sh — saqlangan zahoti chiqadi. Vaqt tanlansa, qo'shiq shu vaqtgacha saytda ko'rinmaydi.</span></div>
+        <label class="check" id="e-chpost-w" hidden><input type="checkbox" id="e-chpost"><span><b>📢 Telegram kanalga rasm bilan joylash</b> — saqlangach, muqova (video bo'lsa — undan kadr) saytga chiqishi bilan kanalga post tushadi. Kanalda rasmsiz chiqqan postni shu bilan qayta joylash mumkin.</span></label>
         <label class="check" id="e-notify-w"><input type="checkbox" id="e-notify"><span><b>📣 Obunachilarga xabar yuborish</b> — sayt yangilangach, telefon va Telegram obunachilariga (sozlamada yoqilgan bo'lsa, kanalga ham) «Yangi qo'shiq» xabari ketadi. <span class="note" id="e-notify-n"></span></span></label>
         <label class="check"><input type="checkbox" id="e-own"><span><b>Bu asarning muallifi va huquq egasi menman.</b> Asar mualliflik huquqi bilan himoyalangan holda joylanadi.</span></label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" type="button" id="ed-save" disabled>GitHub'ga joylash</button><span class="note" id="ed-hint"></span></div>
@@ -943,6 +944,7 @@ async function notifyFlow(n,waitLive){
     var st=await api("api/admin/notify",{method:"POST",body:Object.assign({action:"start"},n)});
     var tot={sent:0,failed:0,removed:0};
     var ch=(DATA.settings||{}).channel,kinds=["push","tg"];if(n.channelPost!==false&&ch&&ch.post&&chNorm(ch.url))kinds.push("channel");
+    if(n.only){kinds=n.only.filter(function(k){return k!=="channel"||(ch&&chNorm(ch.url))});if(!kinds.length)throw new Error("Sozlamalarda Telegram kanal manzili ko'rsatilmagan")}
     for(var kind of kinds){
       var after=0,guardN=0;
       while(guardN++<500){
@@ -1159,7 +1161,7 @@ function renderList(){
     return '<div class="mrow"><div class="ord"><button type="button" data-up="'+i+'" aria-label="Yuqoriga">'+up+'</button><button type="button" data-down="'+i+'" aria-label="Pastga">'+dn+'</button></div>'+thumbHTML(t)+
       '<div style="min-width:0"><div class="nm">'+(t.publishAt&&Date.parse(t.publishAt)>Date.now()?'<span class="tag acc" style="margin-right:6px" title="Rejalashtirilgan">⏳ '+esc(fmtTk(Date.parse(t.publishAt)))+'</span>':'')+(t.lang&&t.lang!=="uz"?'<span class="tag info" style="margin-right:6px">'+esc(lname(t))+'</span>':'')+esc(t.title)+'</div><div class="mt">'+(t.introOnly?'<span class="tag info">Intro</span>':'<span class="tag mute">Qo\'shiq</span>')+(t.status==="sold"?'<span class="tag mute">Sotilgan</span>':'<span class="tag ok">Sotuvda</span>')+(t.featured?'<span class="tag acc">Tavsiya</span>':'')+
       '<span>'+esc(t.genre||"—")+' · <span class="mono">'+esc(t.bpm||"—")+' BPM · '+esc(keyLabel(t.key))+' · '+fmt(t.duration)+'</span></span>'+(t.intro&&!t.introOnly?'<span class="mono">intro '+fmt(t.intro.duration)+'</span>':'')+(t.media&&t.media.length?'<span>'+t.media.length+' slayd</span>':'')+'</div></div>'+
-      '<div class="ops"><button type="button" class="btn sm" data-feat="'+i+'">'+(t.featured?"Tavsiyadan olish":"Tavsiya qilish")+'</button><button type="button" class="btn sm" data-edit="'+i+'">Tahrirlash</button><button type="button" class="btn sm" data-repl="'+i+'">Almashtirish</button><button type="button" class="btn sm danger" data-del="'+i+'">O\'chirish</button></div></div>';
+      '<div class="ops"><button type="button" class="btn sm" data-feat="'+i+'">'+(t.featured?"Tavsiyadan olish":"Tavsiya qilish")+'</button><button type="button" class="btn sm" data-edit="'+i+'">Tahrirlash</button><button type="button" class="btn sm" data-chpost="'+i+'" title="Telegram kanalga rasm bilan joylash">📢 Kanalga</button><button type="button" class="btn sm" data-repl="'+i+'">Almashtirish</button><button type="button" class="btn sm danger" data-del="'+i+'">O\'chirish</button></div></div>';
   }).join("");
 }
 $("mlist").addEventListener("click",function(e){
@@ -1169,8 +1171,19 @@ $("mlist").addEventListener("click",function(e){
   if(b.hasAttribute("data-feat")){i=+b.getAttribute("data-feat");var on=!T[i].featured;T.forEach(function(t){delete t.featured});if(on)T[i].featured=true;renderList();markDirty();return}
   if(b.hasAttribute("data-edit")){openEditor(T[+b.getAttribute("data-edit")],false);return}
   if(b.hasAttribute("data-repl")){openEditor(T[+b.getAttribute("data-repl")],true);return}
+  if(b.hasAttribute("data-chpost")){askChannelPost(T[+b.getAttribute("data-chpost")]);return}
   if(b.hasAttribute("data-del")){askDelete(T[+b.getAttribute("data-del")])}
 });
+function chPostNote(t){return {track:t.id,title:"🎵 "+t.title,body:[t.genre,t.bpm?t.bpm+" BPM":"",t.key,t.voice].filter(Boolean).join(" · "),image:(t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||t.og||"",only:["channel"]}}
+function askChannelPost(t){
+  var ch=(DATA.settings||{}).channel;if(!(ch&&chNorm(ch.url))){toast("Avval Sozlamalarda Telegram kanal manzilini kiriting.",5000);return}
+  if(t.publishAt&&Date.parse(t.publishAt)>Date.now()){toast("Bu qo'shiq hali chiqmagan — u belgilangan vaqtda o'zi kanalga tushadi.",5000);return}
+  var img=chPostNote(t).image;
+  openModal('<h2 id="m-title">📢 Kanalga joylash</h2>'+(img?'<img src="'+esc(rawUrl(img))+'" alt="" style="width:100%;border-radius:10px;border:1px solid var(--line)">':'<p class="note" style="margin:0">Bu qo\'shiqda rasm yo\'q — «Tahrirlash» orqali muqova qo\'shib saqlang, keyin rasm bilan chiqadi.</p>')+
+    '<p style="margin:0"><b>«'+esc(t.title)+'»</b> '+esc(chNorm(ch.url))+' kanaliga rasm va «▶ Tinglash» tugmasi bilan joylanadi. Obunachilarga alohida xabar ketmaydi.</p>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" id="chp-ok">Joylash</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
+  $("chp-ok").addEventListener("click",function(){closeModal();notifyFlow(chPostNote(t),false)});
+}
 function trackPaths(t){var p=[t.audio];if(t.intro&&t.intro.file&&t.intro.file!==t.audio)p.push(t.intro.file);(t.media||[]).forEach(function(m){p.push(m.src)});if(t.og)p.push(t.og);return p.filter(Boolean)}
 function askDelete(t){
   if(pjson()!==SAVED){toast("Avval saqlanmagan o'zgarishlarni saqlang yoki bekor qiling.");return}
@@ -1308,7 +1321,7 @@ function openEditor(t,replace){
   $(t&&t.introOnly?"k-intro":"k-full").checked=true;
   $("mkintro").checked=!t||!!t.intro;$("u-fin").value=E.fin;$("u-fout").value=E.fout;
   ["c-bpm","c-key","c-genre"].forEach(function(i){$(i).hidden=true});["a-bpm","a-key","a-genre"].forEach(function(i){$(i).innerHTML=""});
-  $("e-own").checked=false;$("e-pub").value=t&&t.publishAt&&Date.parse(t.publishAt)>Date.now()?toLocalInput(t.publishAt):"";pubHint();$("e-notify").checked=!t||!!replace||!!(t&&t.publishAt&&Date.parse(t.publishAt)>Date.now()&&PLAN.items.some(function(p){return p.kind==="release"&&p.track===t.id&&p.status==="pending"}));$("e-notify-n").textContent=NTF.total!=null?"("+NTF.total+" ta obunachi)":"";$("file").value="";$("introbox").hidden=true;$("q-wrap").hidden=true;$("report").innerHTML="";$("nobuf").hidden=false;$("log").hidden=true;$("log").textContent="";
+  $("e-own").checked=false;$("e-chpost").checked=false;$("e-chpost-w").hidden=!(t&&!replace);$("e-pub").value=t&&t.publishAt&&Date.parse(t.publishAt)>Date.now()?toLocalInput(t.publishAt):"";pubHint();$("e-notify").checked=!t||!!replace||!!(t&&t.publishAt&&Date.parse(t.publishAt)>Date.now()&&PLAN.items.some(function(p){return p.kind==="release"&&p.track===t.id&&p.status==="pending"}));$("e-notify-n").textContent=NTF.total!=null?"("+NTF.total+" ta obunachi)":"";$("file").value="";$("introbox").hidden=true;$("q-wrap").hidden=true;$("report").innerHTML="";$("nobuf").hidden=false;$("log").hidden=true;$("log").textContent="";
   $("drop").hidden=!!(t&&!replace);$("load-existing").hidden=!(t&&!replace);
   renderMgrid();updateSave();
   $("editor").hidden=false;$("editor").scrollIntoView({behavior:"smooth"});
@@ -1748,6 +1761,7 @@ $("ed-save").addEventListener("click",async function(){
         .then(function(){toast("📅 «"+tt+"» "+fmtTk(schedAt)+" da chiqadi"+($("e-notify")&&$("e-notify").checked?" — xabar ham o'sha vaqtda ketadi.":"."),6000);loadPlan()})
         .catch(function(x){toast("Reja saqlanmadi: "+x.message+". Qo'shiq "+fmtTk(schedAt)+" da chiqadi, lekin xabar avtomatik ketmaydi.",8000)});
     }else if(o&&o.publishAt){api("api/admin/plan",{method:"POST",body:{action:"unrelease",track:t.id}}).then(loadPlan).catch(function(){})}
+    if(!schedAt&&!$("e-notify").checked&&$("e-chpost").checked){var nc=chPostNote(JSON.parse(JSON.stringify(t)));setTimeout(function(){notifyFlow(nc,true)},300)}
     if(!schedAt&&$("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||nt.og||""},true)},300)}
     E.slides.forEach(function(x){if(x.k==="new")URL.revokeObjectURL(x.url)});
     closeEditor();
