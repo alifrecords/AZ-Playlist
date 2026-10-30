@@ -32,7 +32,7 @@ async function handle({ request, env }) {
       await env.DB.prepare("UPDATE plan SET status = 'pending', lock = 0 WHERE id = ?").bind(row.id).run();
       return json({ more: false, waiting: row.id });
     }
-    n = { id: row.id, title: "🎵 Yangi qo'shiq: " + t.title, body: [t.genre, t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).join(" · "), track: t.id, url: "/#t-" + t.id, image: img, ts: now };
+    n = { id: row.id, title: "🔥 PREMYERA: " + t.title, body: [t.genre, t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).join(" · "), track: t.id, url: "/#t-" + t.id, image: img, ts: now };
   } else {
     n = { id: row.id, title: row.title || "AZ MUSIC", body: row.body || "", track: row.track || "", url: row.track ? "/#t-" + row.track : "/", image: row.progress ? null : await pickImage(env, origin, [row.image].concat(trackImages((pl.tracks || []).find((x) => x.id === row.track)))), ts: now };
   }
