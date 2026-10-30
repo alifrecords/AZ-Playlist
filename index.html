@@ -385,7 +385,7 @@ function safePath(p){return /^(music|media)\/[\w.\-]+$/.test(p||"")?p:""}
 
 var DATA={settings:{},tracks:[]},TRACKS=[],TAB="full",GENRE="Hammasi",LANG="all",Q="";
 /* ijro tillari: [kod, nomi, belgi]. Tili ko'rsatilmagan qo'shiq — o'zbekcha */
-var LANGS=[["uz","O'zbekcha","UZ"],["ru","Ruscha","RU"],["en","Inglizcha","EN"],["tr","Turkcha","TR"],["hi","Hindcha","HI"],["tj","Tojikcha","TJ"],["kk","Qozoqcha","KZ"],["ky","Qirg'izcha","KG"],["az","Ozarbayjoncha","AZ"],["ar","Arabcha","AR"],["fa","Forscha","FA"],["ko","Koreyscha","KO"],["other","Boshqa","••"]];
+var LANGS=[["uz","O'zbekcha","UZ"],["ru","Ruscha","RU"],["en","Inglizcha","EN"],["tr","Turkcha","TR"],["hi","Hindcha","HI"],["tj","Tojikcha","TJ"],["kk","Qozoqcha","KZ"],["ky","Qirg'izcha","KG"],["az","Ozarbayjoncha","AZ"],["ar","Arabcha","AR"],["fa","Forscha","FA"],["ko","Koreyscha","KO"],["music","Music Sound","♫"],["other","Boshqa","••"]];
 function langOf(t){var l=t&&t.lang;return LANGS.some(function(x){return x[0]===l})?l:"uz"}
 function langName(t){var l=langOf(t);if(l==="other")return t.langName||"Boshqa";for(var i=0;i<LANGS.length;i++)if(LANGS[i][0]===l)return LANGS[i][1];return "O'zbekcha"}
 function langCode(t){var l=langOf(t);if(l==="other"){var n=String(t.langName||"").trim();return n?n.slice(0,2).toUpperCase():"••"}for(var i=0;i<LANGS.length;i++)if(LANGS[i][0]===l)return LANGS[i][2];return "UZ"}
