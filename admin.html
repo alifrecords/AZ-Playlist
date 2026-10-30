@@ -270,7 +270,7 @@ html.mob #mlist{padding-bottom:70px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v20</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v21</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -519,23 +519,32 @@ try{var c0=JSON.parse(localStorage.getItem("az_gh")||"null");if(c0)CFG=Object.as
 function saveCfg(){try{localStorage.setItem("az_gh",JSON.stringify(CFG))}catch(e){}}
 var NET_MSG="Internet orqali GitHub'ga ulanib bo'lmadi. Antivirus (Kaspersky, ESET, Avast), VPN yoki proksi katta fayl yuborishni bloklayotgan bo'lishi mumkin: ularni vaqtincha o'chirib qayta urinib ko'ring yoki «Ulanishni tekshirish» tugmasini bosing.";
 function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+/* Yo'l: "cf" — Cloudflare orqali (sayt/api/gh, tez va barqaror), "gh" — to'g'ridan-to'g'ri api.github.com.
+   Biri uzilsa, keyingi urinish ikkinchisidan ketadi; ishlagan yo'l eslab qolinadi. */
+var ROUTE="cf";try{var r0=localStorage.getItem("az_route");if(r0==="gh"||r0==="cf")ROUTE=r0}catch(e){}
+var CF_OK=location.protocol!=="file:";
+function setRoute(v){if(v===ROUTE)return;ROUTE=v;try{localStorage.setItem("az_route",v)}catch(e){}}
+function ghUrl(route,path){var p="/repos/"+encodeURIComponent(CFG.owner)+"/"+encodeURIComponent(CFG.repo)+path;return route==="cf"?location.origin+"/api/gh"+p:"https://api.github.com"+p}
 async function gh(path,opt){
   opt=opt||{};
   var body=opt.body?JSON.stringify(opt.body):undefined,r=null,lastErr=null;
-  var tries=opt.tries||3;
+  var tries=opt.tries||3,route=CF_OK?ROUTE:"gh";
+  var tmo=opt.timeout||(body?Math.min(300000,30000+Math.round(body.length/15)):120000); /* kamida ~15 KB/s */
   for(var tr=0;tr<tries;tr++){
     try{
-      var ctl=new AbortController(),tmr=setTimeout(function(){ctl.abort()},opt.timeout||120000);
+      var ctl=new AbortController(),tmr=setTimeout(function(){ctl.abort()},tmo);
       try{
-        r=await fetch("https://api.github.com/repos/"+encodeURIComponent(CFG.owner)+"/"+encodeURIComponent(CFG.repo)+path,{
+        r=await fetch(ghUrl(route,path),{
           method:opt.method||"GET",signal:ctl.signal,
           headers:Object.assign({"Authorization":"Bearer "+CFG.token,"Accept":opt.accept||"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},body?{"Content-Type":"application/json"}:{}),
           body:body,cache:"no-store"
         });
       }finally{clearTimeout(tmr)}
+      if(route==="cf"&&!r.headers.get("x-az-proxy")){r=null;CF_OK=false;route="gh";tr--;continue} /* yo'l hali joylanmagan */
       if(r.status>=500||r.status===429){lastErr=null;if(tr<tries-1){if(opt.onRetry)opt.onRetry(tr+1);await wait(2000*(tr+1));continue}}
+      setRoute(route);
       break;
-    }catch(e){r=null;lastErr=e;if(tr<tries-1){if(opt.onRetry)opt.onRetry(tr+1);await wait(2000*(tr+1))}}
+    }catch(e){r=null;lastErr=e;if(tr<tries-1){if(opt.onRetry)opt.onRetry(tr+1);if(CF_OK)route=route==="cf"?"gh":"cf";await wait(1500*(tr+1))}}
   }
   if(!r){var ne=new Error(NET_MSG);ne.status=0;ne.cause=lastErr;throw ne}
   if(!r.ok){
@@ -564,21 +573,37 @@ var CHUNK_MAX=4*1048576,CHUNK_MIN=128*1024;
 function chunkGet(){try{var v=+localStorage.getItem("az_chunk");if(v>=CHUNK_MIN&&v<=CHUNK_MAX)return v}catch(e){}return CHUNK_MAX}
 function chunkSet(v){try{localStorage.setItem("az_chunk",String(v))}catch(e){}}
 function isNetErr(e){return e&&(e.status===0||e.status===400||e.status===408||e.status===413)}
+/* Davom ettirish: GitHub'ga yetib borgan har bir bo'lak (SHA bo'yicha) eslab qolinadi.
+   Yuklash uzilib, qayta «Joylash» bosilsa — yetib borgan bo'laklar qayta yuborilmaydi. */
+var DONE={};try{DONE=JSON.parse(localStorage.getItem("az_blobs")||"{}")||{}}catch(e){DONE={}}
+function doneSave(){var now=Date.now(),o={};Object.keys(DONE).forEach(function(k){if(now-DONE[k]<86400000)o[k]=DONE[k]});DONE=o;try{localStorage.setItem("az_blobs",JSON.stringify(o))}catch(e){}}
+doneSave();
+async function gitSha(blob){
+  var b=new Uint8Array(await blob.arrayBuffer()),h=new TextEncoder().encode("blob "+b.length+"\0"),all=new Uint8Array(h.length+b.length);
+  all.set(h);all.set(b,h.length);
+  var d=new Uint8Array(await crypto.subtle.digest("SHA-1",all));return Array.prototype.map.call(d,function(x){return(x<16?"0":"")+x.toString(16)}).join("");
+}
 async function putBlob(blob,log){
-  return (await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(blob),encoding:"base64"},tries:3,onRetry:function(n){log("  ulanish uzildi, qayta urinish "+n+"/2…")}})).sha;
+  var want=null;try{want=await gitSha(blob)}catch(e){}
+  if(want&&DONE[want]){return want}
+  var sha=(await gh("/git/blobs",{method:"POST",body:{content:await b64FromBlob(blob),encoding:"base64"},tries:4,onRetry:function(n){log("  ulanish uzildi, qayta urinish "+n+"/3…")}})).sha;
+  DONE[sha]=Date.now();doneSave();return sha;
 }
 async function putFileRobust(path,blob,log,onPart){
   var chunk=chunkGet();
   for(;;){
     try{
       if(blob.size<=chunk){var sha=await putBlob(blob,log);if(onPart)onPart(1,1);return [{path:path,sha:sha}]}
-      var n=Math.ceil(blob.size/chunk),pad=function(x){return String(x).padStart(3,"0")},out=[];
-      log("  "+n+" bo'lakda yuborilmoqda ("+Math.round(chunk/1024)+" KB)");
-      for(var i=0;i<n;i++){
-        var sh=await putBlob(blob.slice(i*chunk,Math.min(blob.size,(i+1)*chunk)),log);
-        out.push({path:path+".part-"+pad(i+1)+"-of-"+pad(n),sha:sh});
-        if(onPart)onPart(i+1,n);
-      }
+      var n=Math.ceil(blob.size/chunk),pad=function(x){return String(x).padStart(3,"0")},out=new Array(n),next=0,done=0;
+      log("  "+n+" bo'lakda yuborilmoqda ("+Math.round(chunk/1024)+" KB, 2 tadan parallel)");
+      var worker=async function(){
+        while(next<n){var i=next++;
+          var sh=await putBlob(blob.slice(i*chunk,Math.min(blob.size,(i+1)*chunk)),log);
+          out[i]={path:path+".part-"+pad(i+1)+"-of-"+pad(n),sha:sh};done++;
+          if(onPart)onPart(done,n);
+        }
+      };
+      await Promise.all([worker(),worker()]);
       return out;
     }catch(e){
       if(!isNetErr(e)||chunk<=CHUNK_MIN)throw e;
@@ -609,9 +634,22 @@ async function commitFiles(files,message,onLog){
     tree=tree.filter(function(x){return !x._drop||have[x.path]});
   }
   tree.forEach(function(x){delete x._drop});
-  var nt=await gh("/git/trees",{method:"POST",body:{base_tree:bc.tree.sha,tree:tree}});
-  var cm=await gh("/git/commits",{method:"POST",body:{message:message,tree:nt.sha,parents:[base]}});
-  await gh("/git/refs/heads/"+encodeURIComponent(CFG.branch),{method:"PATCH",body:{sha:cm.sha}});
+  var cm=null;
+  for(var at=0;;at++){
+    try{
+      var nt=await gh("/git/trees",{method:"POST",body:{base_tree:bc.tree.sha,tree:tree}});
+      cm=await gh("/git/commits",{method:"POST",body:{message:message,tree:nt.sha,parents:[base]}});
+      await gh("/git/refs/heads/"+encodeURIComponent(CFG.branch),{method:"PATCH",body:{sha:cm.sha}});
+      break;
+    }catch(e){
+      /* 422: shu orada repoga boshqa o'zgarish tushgan (masalan bo'laklarni yig'uvchi bot) — yangi holatga qayta ulaymiz */
+      if(e.status!==422||at>=3)throw e;
+      if(at===1){DONE={};doneSave()}
+      log("  repo shu orada yangilandi — o'zgarishlar yangi holatga ulanmoqda…");
+      await wait(1500);
+      ref=await gh("/git/ref/heads/"+encodeURIComponent(CFG.branch));base=ref.object.sha;bc=await gh("/git/commits/"+base);
+    }
+  }
   log("commit: "+cm.sha.slice(0,7)+" · tayyor"+(anyParts?" (bo'laklarni GitHub boti ~1 daqiqada yig'adi)":""));
   return cm.sha;
 }
