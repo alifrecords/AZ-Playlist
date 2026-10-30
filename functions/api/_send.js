@@ -4,16 +4,41 @@ import { vapidKeys, vapidAuth } from "./_db.js";
 
 export const PUSH_BATCH = 40, TG_BATCH = 25;
 
-// Rasm bilan yuboradi; Telegram rasmni ololmasa — matn bilan qayta yuboradi (obunachi o'chirilmaydi)
-async function tgPost(api, chat, n, text, markup) {
-  if (n.image) {
-    const r = await fetch(api + "sendPhoto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, photo: n.image, caption: text, reply_markup: markup }) });
+// Rasmni Telegram'ga FAYL qilib yuklaydi (Telegram saytimizdan o'zi yuklab olishiga bog'liq emas).
+// photo: Blob (fayl) yoki satr (file_id / URL). Rasm o'tmasa — matn bilan yuboradi (obunachi o'chirilmaydi).
+export async function tgPhoto(api, chat, photo, text, markup) {
+  if (photo) {
+    let r;
+    if (typeof photo === "string") {
+      r = await fetch(api + "sendPhoto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, photo, caption: text, reply_markup: markup }) });
+    } else {
+      const fd = new FormData();
+      fd.append("chat_id", String(chat)); fd.append("caption", text); fd.append("reply_markup", JSON.stringify(markup));
+      fd.append("photo", photo, "card.jpg");
+      r = await fetch(api + "sendPhoto", { method: "POST", body: fd });
+    }
     if (r.ok) return r;
     let d = "";
     try { d = (await r.clone().json()).description || ""; } catch (e) {}
-    if (!(r.status === 400 && /photo|file|url|image|wrong type|webpage/i.test(d))) return r;
+    if (!(r.status === 400 && /photo|file|url|image|wrong type|webpage|IMAGE_PROCESS|dimensions/i.test(d))) return r;
   }
   return fetch(api + "sendMessage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, reply_markup: markup, disable_web_page_preview: true }) });
+}
+// Saytdagi rasmni baytlari bilan oladi (Telegram'ga fayl qilib yuklash uchun)
+export async function loadPhoto(env, origin, url) {
+  if (!url || typeof url !== "string" || !url.startsWith(origin + "/media/")) return null;
+  try {
+    const r = await env.ASSETS.fetch(new URL(url));
+    if (r.ok && /^image\//i.test(r.headers.get("content-type") || "")) return new Blob([await r.arrayBuffer()], { type: r.headers.get("content-type") });
+  } catch (e) {}
+  return null;
+}
+export function channelLink(origin, botApp, n) {
+  const ba = String(botApp || "").trim().replace(/^(https?:\/\/)?(www\.)?(t|telegram)\.me\//i, "https://t.me/").replace(/\/+$/, "");
+  return /^https:\/\/t\.me\/[\w\/]+$/.test(ba) && n.track ? ba + "?startapp=" + n.track : origin + n.url;
+}
+export function tgErr(d) {
+  return /not enough rights|administrator|chat not found|member/i.test(d || "") ? "bot kanalda admin emas" : String(d || "").slice(0, 120);
 }
 
 // Saytda haqiqatan bor rasmni tanlaydi (bo'laklab yuklangan fayl hali yig'ilmagan bo'lishi mumkin).
@@ -21,7 +46,7 @@ async function tgPost(api, chat, n, text, markup) {
 const IMG = /^media\/[\w.\-]+\.(jpe?g|png|webp|gif)$/i;
 export function trackImages(t) {
   if (!t) return [];
-  return [].concat((t.media || []).filter((m) => m.type === "image").map((m) => m.src), t.og || []).filter((x) => IMG.test(x || ""));
+  return [].concat(t.og || [], (t.media || []).filter((m) => m.type === "image").map((m) => m.src)).filter((x) => IMG.test(x || "")); // avval kartochka
 }
 export async function pickImage(env, origin, paths) {
   for (const p of paths) {
@@ -61,13 +86,14 @@ export async function sendBatch(env, origin, n, kind, after, opt = {}) {
     const chat = /^@[A-Za-z0-9_]{4,32}$/.test(opt.channel || "") ? opt.channel : null;
     if (!chat) return { done: true, sent: 0, failed: 0, removed: 0, next: 0, msg: "kanal noto'g'ri" };
     const api = (env.TG_API || "https://api.telegram.org") + "/bot" + env.BOT_TOKEN + "/";
-    const ba = String(opt.botApp || "").trim().replace(/^(https?:\/\/)?(www\.)?(t|telegram)\.me\//i, "https://t.me/").replace(/\/+$/, "");
-    const link = /^https:\/\/t\.me\/[\w\/]+$/.test(ba) && n.track ? ba + "?startapp=" + n.track : origin + n.url;
+    const link = channelLink(origin, opt.botApp, n);
     const text = n.title + (n.body ? "\n" + n.body : "") + "\n\n▶ Tinglash: pastdagi tugma";
     const markup = { inline_keyboard: [[{ text: "▶ Tinglash", url: link }]] };
-    const r = await tgPost(api, chat, n, text, markup);
+    const photo = (await loadPhoto(env, origin, n.image)) || n.image || null;
+    const r = await tgPhoto(api, chat, photo, text, markup);
     let msg = "";
-    if (!r.ok) { try { const j = await r.json(); msg = /not enough rights|administrator|chat not found|member/i.test(j.description || "") ? "bot kanalda admin emas" : (j.description || "").slice(0, 80); } catch (e) {} }
+    if (!r.ok) { try { msg = tgErr((await r.json()).description); } catch (e) {} }
+    else { try { const j = await r.clone().json(); if (photo && !(j.result && j.result.photo)) msg = "rasm o'tmadi — matn bilan joylandi"; } catch (e) {} }
     return { done: true, sent: r.ok ? 1 : 0, failed: r.ok ? 0 : 1, removed: 0, next: 0, msg };
   }
 
@@ -78,14 +104,20 @@ export async function sendBatch(env, origin, n, kind, after, opt = {}) {
     const api = (env.TG_API || "https://api.telegram.org") + "/bot" + env.BOT_TOKEN + "/";
     const text = n.title + (n.body ? "\n" + n.body : "") + "\n\nTinglash uchun pastdagi tugmani bosing 👇";
     const markup = { inline_keyboard: [[{ text: "▶ Tinglash", web_app: { url: origin + n.url } }]] };
-    await Promise.all(rows.map(async (row) => {
+    let photo = (await loadPhoto(env, origin, n.image)) || n.image || null;
+    const one = async (row) => {
       try {
-        const r = await tgPost(api, row.uid, n, text, markup);
-        if (r.ok) sent++;
+        const r = await tgPhoto(api, row.uid, photo, text, markup);
+        if (r.ok) {
+          sent++;
+          if (photo && typeof photo !== "string") { try { const j = await r.clone().json(); const ph = j.result && j.result.photo; if (ph && ph.length) photo = ph[ph.length - 1].file_id; } catch (e) {} }
+        }
         else if (r.status === 403 || r.status === 400) { removed++; await env.DB.prepare("DELETE FROM tg_subs WHERE uid = ?").bind(row.uid).run(); }
         else failed++;
       } catch (e) { failed++; }
-    }));
+    };
+    await one(rows[0]); // birinchisida rasm yuklanadi, qolganlariga uning file_id si ketadi
+    await Promise.all(rows.slice(1).map(one));
     return { done: rows.length < TG_BATCH, sent, failed, removed, next: rows[rows.length - 1].uid };
   }
   return { done: true, sent, failed, removed, next: after, msg: "bad kind" };

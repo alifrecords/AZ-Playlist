@@ -270,7 +270,7 @@ html.mob #mlist{padding-bottom:70px}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v24</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v25</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -461,7 +461,7 @@ html.mob #mlist{padding-bottom:70px}
         <div class="f" id="q-wrap" hidden><label for="e-kbps">Saytga chiqadigan MP3 sifati</label><select class="field" id="e-kbps"></select><span class="note" id="q-est"></span></div>
         <div id="report"></div>
         <div class="pubw"><label class="f"><span>📅 Chiqish vaqti (ixtiyoriy)</span><input class="field" type="datetime-local" id="e-pub"></label><button class="btn sm" type="button" id="e-pub-clr">Hozir chiqsin</button><span class="note" id="e-pub-h">Bo'sh — saqlangan zahoti chiqadi. Vaqt tanlansa, qo'shiq shu vaqtgacha saytda ko'rinmaydi.</span></div>
-        <label class="check" id="e-chpost-w" hidden><input type="checkbox" id="e-chpost"><span><b>📢 Telegram kanalga rasm bilan joylash</b> — saqlangach, muqova (video bo'lsa — undan kadr) saytga chiqishi bilan kanalga post tushadi. Kanalda rasmsiz chiqqan postni shu bilan qayta joylash mumkin.</span></label>
+        <label class="check" id="e-chpost-w" hidden><input type="checkbox" id="e-chpost"><span><b>📢 Telegram kanalga kartochka bilan joylash</b> — saqlangach muqovadan (bir nechta rasm bo'lsa — birinchisidan, video bo'lsa — kadridan) kartochka yasaladi, «✓ Kartochka tayyor» chiqadi, «Yuborish» ni bossangiz kanalga tushadi.</span></label>
         <label class="check" id="e-notify-w"><input type="checkbox" id="e-notify"><span><b>📣 Obunachilarga xabar yuborish</b> — sayt yangilangach, telefon va Telegram obunachilariga (sozlamada yoqilgan bo'lsa, kanalga ham) «Yangi qo'shiq» xabari ketadi. <span class="note" id="e-notify-n"></span></span></label>
         <label class="check"><input type="checkbox" id="e-own"><span><b>Bu asarning muallifi va huquq egasi menman.</b> Asar mualliflik huquqi bilan himoyalangan holda joylanadi.</span></label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn primary" type="button" id="ed-save" disabled>GitHub'ga joylash</button><span class="note" id="ed-hint"></span></div>
@@ -915,7 +915,7 @@ $("sb-send").addEventListener("click",function(){
   var title=$("sb-title").value.trim(),body=$("sb-body").value.trim(),tr=$("sb-track").value;
   if(!title){toast("Sarlavha yozing.");$("sb-title").focus();return}
   openModal('<h2 id="m-title">Xabar yuborilsinmi?</h2><div class="acm"><b>'+esc(title)+'</b><p>'+esc(body)+'</p></div><p class="note" style="margin:0">'+(NTF.total!=null?NTF.total+" ta obunachiga":"Barcha obunachilarga")+' yuboriladi. Qaytarib bo\'lmaydi.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" id="sb-ok">Yuborish</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
-  $("sb-ok").onclick=function(){closeModal();var t=tr&&(DATA.tracks||[]).filter(function(x){return x.id===tr})[0];notifyFlow({track:tr,title:title,body:body,image:t?((t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||t.og||""):""},false)};
+  $("sb-ok").onclick=function(){closeModal();var t=tr&&(DATA.tracks||[]).filter(function(x){return x.id===tr})[0];notifyFlow({track:tr,title:title,body:body,image:t?(t.og||(t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""):""},false)};
 });
 /* sayt yangilanishini kutadi (yangi qo'shiq jonli saytda paydo bo'lguncha), keyin partiyalab yuboradi */
 async function notifyFlow(n,waitLive){
@@ -1174,15 +1174,41 @@ $("mlist").addEventListener("click",function(e){
   if(b.hasAttribute("data-chpost")){askChannelPost(T[+b.getAttribute("data-chpost")]);return}
   if(b.hasAttribute("data-del")){askDelete(T[+b.getAttribute("data-del")])}
 });
-function chPostNote(t){return {track:t.id,title:"🎵 "+t.title,body:[t.genre,t.bpm?t.bpm+" BPM":"",t.key,t.voice].filter(Boolean).join(" · "),image:(t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||t.og||"",only:["channel"]}}
-function askChannelPost(t){
+function chPostNote(t){return {track:t.id,title:"🎵 "+t.title,body:[t.genre,t.bpm?t.bpm+" BPM":"",t.key,t.voice].filter(Boolean).join(" · "),image:t.og||(t.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||"",only:["channel"]}}
+function blobB64(b){return b64FromBlob(b)}
+/* Kanal uchun kartochka: birinchi slayd (rasm yoki video kadri) + nom, janr, BPM. Saytga bog'liq emas. */
+async function buildCard(t){
+  var m=(t.media||[])[0];
+  if(m){
+    var urls=[location.origin+"/"+m.src,rawUrl(m.src)];
+    for(var i=0;i<urls.length;i++){try{return await makeOgCard(t,m.type,urls[i],m.start||0)}catch(e){}}
+  }
+  if(t.og){var u2=[location.origin+"/"+t.og,rawUrl(t.og)];for(var k=0;k<u2.length;k++){try{var r=await fetch(u2[k],{cache:"no-store"});if(r.ok&&/^image\//.test(r.headers.get("content-type")||""))return await r.blob()}catch(e){}}}
+  return null;
+}
+function askChannelPost(t,ready){
   var ch=(DATA.settings||{}).channel;if(!(ch&&chNorm(ch.url))){toast("Avval Sozlamalarda Telegram kanal manzilini kiriting.",5000);return}
-  if(t.publishAt&&Date.parse(t.publishAt)>Date.now()){toast("Bu qo'shiq hali chiqmagan — u belgilangan vaqtda o'zi kanalga tushadi.",5000);return}
-  var img=chPostNote(t).image;
-  openModal('<h2 id="m-title">📢 Kanalga joylash</h2>'+(img?'<img src="'+esc(rawUrl(img))+'" alt="" style="width:100%;border-radius:10px;border:1px solid var(--line)">':'<p class="note" style="margin:0">Bu qo\'shiqda rasm yo\'q — «Tahrirlash» orqali muqova qo\'shib saqlang, keyin rasm bilan chiqadi.</p>')+
-    '<p style="margin:0"><b>«'+esc(t.title)+'»</b> '+esc(chNorm(ch.url))+' kanaliga rasm va «▶ Tinglash» tugmasi bilan joylanadi. Obunachilarga alohida xabar ketmaydi.</p>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" id="chp-ok">Joylash</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
-  $("chp-ok").addEventListener("click",function(){closeModal();notifyFlow(chPostNote(t),false)});
+  if(t.publishAt&&Date.parse(t.publishAt)>Date.now()){toast("Bu qo\'shiq hali chiqmagan — u belgilangan vaqtda o\'zi kanalga tushadi.",5000);return}
+  openModal('<h2 id="m-title">📢 Kanalga joylash</h2><div id="chp-prev" style="aspect-ratio:1200/630;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;background:var(--bg);overflow:hidden"><span class="note">⏳ Kartochka tayyorlanmoqda…</span></div>'+
+    '<p style="margin:0" id="chp-st" class="note">Muqovadan kartochka yasalmoqda (bir necha soniya).</p>'+
+    '<p style="margin:0"><b>«'+esc(t.title)+'»</b> → '+esc(chNorm(ch.url))+'. Obunachilarga alohida xabar ketmaydi.</p>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" id="chp-ok" disabled>Yuborish</button><button class="btn" type="button" data-close>Bekor qilish</button></div>');
+  var card=null,url=null,cancelled=false;
+  MODAL_CB=function(){cancelled=true;if(url)URL.revokeObjectURL(url)};
+  (ready?Promise.resolve(ready):buildCard(t)).then(function(b){card=b}).catch(function(){}).then(function(){
+    if(cancelled||!$("chp-ok"))return;
+    if(card){url=URL.createObjectURL(card);$("chp-prev").innerHTML='<img src="'+url+'" alt="" style="width:100%;height:100%;object-fit:cover">';$("chp-st").innerHTML='<b style="color:var(--ok)">✓ Kartochka tayyor.</b> «Yuborish» ni bosing.'}
+    else{$("chp-prev").innerHTML='<span class="note">Rasm yo\'q</span>';$("chp-st").textContent="Kartochka yasalmadi (muqova topilmadi). «Tahrirlash» orqali rasm yoki video qo'shing — yoki matn bilan yuboring."}
+    var ok=$("chp-ok");ok.disabled=false;ok.textContent=card?"Yuborish":"Matn bilan yuborish";
+    ok.onclick=async function(){
+      ok.disabled=true;ok.textContent="Yuborilmoqda…";
+      try{
+        var n=chPostNote(t),body={track:t.id,title:n.title,body:n.body};if(card)body.photo=await blobB64(card);
+        var r=await api("api/admin/chpost",{method:"POST",body:body});
+        closeModal();toast(r.photo?"✓ Kanalga kartochka bilan joylandi.":"Kanalga joylandi, lekin rasm o\'tmadi.",6000);
+      }catch(e){ok.disabled=false;ok.textContent="Qayta urinish";$("chp-st").innerHTML='<b style="color:var(--bad)">Yuborilmadi:</b> '+esc(e.message)}
+    };
+  });
 }
 function trackPaths(t){var p=[t.audio];if(t.intro&&t.intro.file&&t.intro.file!==t.audio)p.push(t.intro.file);(t.media||[]).forEach(function(m){p.push(m.src)});if(t.og)p.push(t.og);return p.filter(Boolean)}
 function askDelete(t){
@@ -1737,13 +1763,13 @@ $("ed-save").addEventListener("click",async function(){
     (o&&o.media||[]).forEach(function(m){if(!newMedia.some(function(n){return n.src===m.src}))del.push(m.src)});
     t.media=newMedia;
     /* havola kartochkasi (1200×630): muqova, nom yoki ma'lumot o'zgarsa qayta yasaladi */
-    var m0=newMedia[0],o0=o&&o.media&&o.media[0];
+    var m0=newMedia[0],o0=o&&o.media&&o.media[0],ogCardBlob=null;
     var ogStale=!o||!o.og||!o0||!m0||m0.src!==o0.src||o.title!==t.title||o.genre!==t.genre||o.bpm!==t.bpm||o.key!==t.key;
     if(m0&&ogStale){
       try{
         logLine("havola kartochkasi yasalmoqda…");
         var x0=seq[0],srcUrl=x0.k==="new"?x0.url:rawUrl(m0.src);
-        var ogb=await makeOgCard(t,m0.type,srcUrl,m0.start||0);
+        var ogb=await makeOgCard(t,m0.type,srcUrl,m0.start||0);ogCardBlob=ogb;
         var op="media/og-"+t.id+"-"+st+".jpg";files.push({path:op,data:ogb});if(o&&o.og&&o.og!==op)del.push(o.og);t.og=op;
       }catch(oe){logLine("  kartochka yasalmadi ("+oe.message+") — havola umumiy rasm bilan chiqadi")}
     }else if(!m0&&o&&o.og){del.push(o.og);delete t.og}
@@ -1761,8 +1787,14 @@ $("ed-save").addEventListener("click",async function(){
         .then(function(){toast("📅 «"+tt+"» "+fmtTk(schedAt)+" da chiqadi"+($("e-notify")&&$("e-notify").checked?" — xabar ham o'sha vaqtda ketadi.":"."),6000);loadPlan()})
         .catch(function(x){toast("Reja saqlanmadi: "+x.message+". Qo'shiq "+fmtTk(schedAt)+" da chiqadi, lekin xabar avtomatik ketmaydi.",8000)});
     }else if(o&&o.publishAt){api("api/admin/plan",{method:"POST",body:{action:"unrelease",track:t.id}}).then(loadPlan).catch(function(){})}
-    if(!schedAt&&!$("e-notify").checked&&$("e-chpost").checked){var nc=chPostNote(JSON.parse(JSON.stringify(t)));setTimeout(function(){notifyFlow(nc,true)},300)}
-    if(!schedAt&&$("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||nt.og||""},true)},300)}
+    if(!schedAt&&$("e-chpost").checked){
+      var tc=JSON.parse(JSON.stringify(t)),cardP=null;
+      if(ogCardBlob)cardP=Promise.resolve(ogCardBlob);
+      else if(m0){var s0=seq[0];cardP=makeOgCard(tc,m0.type,s0&&s0.k==="new"?s0.url:rawUrl(m0.src),m0.start||0).catch(function(){return null})}
+      (cardP||Promise.resolve(null)).then(function(cb){setTimeout(function(){askChannelPost(tc,cb||null)},400)});
+      if(cardP)await cardP;
+    }
+    if(!schedAt&&$("e-notify").checked){var nt=JSON.parse(JSON.stringify(t));setTimeout(function(){notifyFlow({track:nt.id,title:"🎵 Yangi qo'shiq: "+nt.title,body:[nt.genre,nt.bpm?nt.bpm+" BPM":"",nt.key,nt.voice].filter(Boolean).join(" · "),image:nt.og||(nt.media||[]).filter(function(m){return m.type==="image"}).map(function(m){return m.src})[0]||""},true)},300)}
     E.slides.forEach(function(x){if(x.k==="new")URL.revokeObjectURL(x.url)});
     closeEditor();
   }catch(e){
