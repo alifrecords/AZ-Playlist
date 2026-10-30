@@ -6,6 +6,12 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Azimxodjayev Music · Admin</title>
 <meta name="theme-color" content="#121110">
+<script>
+/* Telefon rejimi: faqat telefon/planshetda (sensorli va tor ekran) yoki ?m=1 bilan yoqiladi. Kompyuterda hech narsa o'zgarmaydi. */
+(function(){try{var q=new URLSearchParams(location.search).get("m"),ls=null;try{if(q==="1"||q==="0")localStorage.setItem("az_mob",q);ls=localStorage.getItem("az_mob")}catch(e){}
+var auto=matchMedia("(max-width:900px)").matches&&matchMedia("(pointer:coarse)").matches;
+if(ls==="1"||(ls!=="0"&&auto))document.documentElement.classList.add("mob")}catch(e){}})();
+</script>
 <link rel="manifest" href="manifest-admin.webmanifest">
 <link rel="apple-touch-icon" href="icons/admin-apple-touch-icon.png">
 <meta name="application-name" content="AZ ADMIN">
@@ -228,13 +234,43 @@ body.dragging .editor{outline:2px dashed var(--accent);outline-offset:6px}
 .modal{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;max-width:calc(100% - 32px);text-align:center}
 .steps{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:4px;font-size:14px}
+
+/* ===== Telefon rejimi (faqat html.mob) ===== */
+.mtab,.msave{display:none}
+html.mob body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+html.mob .top .brand .nm,html.mob .top .brand .tag{display:none}
+html.mob .top .brand{flex:0 0 auto}html.mob #conn-state{margin-right:auto;white-space:nowrap}
+html.mob .top .wrap{flex-wrap:nowrap;gap:8px;padding-block:8px}
+html.mob .top .btn.sm{min-height:34px;padding:0 10px;font-size:13px}
+html.mob main{gap:14px;padding-top:12px}
+html.mob .card{padding:16px;border-radius:12px;gap:14px}
+html.mob .field{font-size:16px}
+html.mob .btn.sm{min-height:40px}
+html.mob .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+html.mob .dirty{top:52px}
+html.mob.mob-in main>section.card{display:none}
+html.mob.mob-in[data-tab=songs] #materials,html.mob.mob-in[data-tab=plan] #plan,html.mob.mob-in[data-tab=stats] #stats,
+html.mob.mob-in[data-tab=cmts] #cmts,html.mob.mob-in[data-tab=more] #conn,html.mob.mob-in[data-tab=more] #settings,
+html.mob.mob-in[data-tab=more] #subs,html.mob.mob-in[data-tab=more] #help,html.mob.mob-in[data-tab=more] #mview{display:flex}
+html.mob.ed-open main>section.card{display:none!important}
+html.mob.mob-in .mtab{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(18,17,16,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px))}
+html.mob.ed-open .mtab{display:none}
+.mtab button{border:0;background:transparent;color:var(--faint);display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;font:700 11px var(--body);cursor:pointer;position:relative;min-height:52px}
+.mtab button i{font-style:normal;font-size:20px;line-height:1}
+.mtab button[aria-current=page]{color:var(--accent);background:var(--accent-soft)}
+.mtab .bd{position:absolute;top:2px;right:calc(50% - 22px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#1b0f0c;font:800 11px/18px var(--body)}
+html.mob.ed-open .msave{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;gap:8px;align-items:center;background:rgba(18,17,16,.97);border-top:1px solid var(--line);padding:10px max(12px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px))}
+.msave .btn{flex:1}.msave .btn.x{flex:0 0 auto}
+html.mob .fab{display:none}
+html.mob.mob-in[data-tab=songs]:not(.ed-open) .fab{display:grid;place-items:center;position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:41;width:58px;height:58px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font:800 30px/1 var(--body);box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer}
+html.mob #mlist{padding-bottom:70px}
 </style>
 </head>
 <body>
 
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v18</span></div>
+    <div class="brand"><span class="mark">AZ</span><span class="nm">AZIMXODJAYEV MUSIC</span><span class="tag acc">ADMIN</span><span class="tag mute mono" title="Admin versiyasi">v19</span></div>
     <span class="tag mute" id="conn-state">Ulanmagan</span>
     <button class="btn sm primary" type="button" id="install" hidden>O'rnatish</button>
     <a class="btn sm" href="./" target="_blank" rel="noopener">Saytni ochish</a>
@@ -1672,6 +1708,54 @@ $("ed-save").addEventListener("click",async function(){
     DATA=JSON.parse(before);renderList();logLine("XATO: "+e.message);toast(e.message,6000);btn.disabled=false;updateSave();
   }
 });
+})();
+</script>
+<nav class="mtab" id="mtab" aria-label="Bo'limlar">
+  <button type="button" data-t="songs"><i>🎵</i>Qo'shiqlar</button>
+  <button type="button" data-t="plan"><i>📅</i>Reja</button>
+  <button type="button" data-t="stats"><i>📊</i>Statistika</button>
+  <button type="button" data-t="cmts"><i>💬</i>Izohlar<span class="bd" id="mtab-cm" hidden></span></button>
+  <button type="button" data-t="more"><i>⚙️</i>Boshqa</button>
+</nav>
+<button class="fab" type="button" id="mfab" aria-label="Yangi qo'shiq qo'shish" style="display:none">+</button>
+<div class="msave" id="msave"><button class="btn x" type="button" id="msave-x">Yopish</button><button class="btn primary" type="button" id="msave-b" disabled>GitHub'ga joylash</button></div>
+<script>
+/* Telefon rejimi boshqaruvi — asosiy admin kodiga tegmaydi, faqat tugmalarini bosadi va ko'rinishni almashtiradi */
+(function(){
+var R=document.documentElement,$=function(i){return document.getElementById(i)};
+var fab=$("mfab");fab.style.display="";
+if(!R.classList.contains("mob")){
+  return;
+}
+var tab="songs";try{tab=localStorage.getItem("az_mtab")||"songs"}catch(e){}
+function setTab(t,scroll){tab=t;R.setAttribute("data-tab",t);try{localStorage.setItem("az_mtab",t)}catch(e){}
+  [].forEach.call(document.querySelectorAll("#mtab button"),function(b){if(b.getAttribute("data-t")===t)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  if(scroll!==false)window.scrollTo(0,0)}
+setTab(tab,false);
+$("mtab").addEventListener("click",function(e){var b=e.target.closest("button[data-t]");if(b)setTab(b.getAttribute("data-t"))});
+fab.addEventListener("click",function(){$("add-new").click()});
+/* ko'rinish almashtirgich (Boshqa bo'limida) */
+var v=document.createElement("section");v.className="card";v.id="mview";
+v.innerHTML='<h2>Ko\'rinish</h2><p class="note" style="margin:0">Hozir telefon ko\'rinishi yoqilgan. Kompyuterdagi to\'liq ko\'rinish kerak bo\'lsa — almashtiring (keyin «?m=1» bilan qaytasiz).</p><div><button class="btn sm" type="button" id="mview-pc">Kompyuter ko\'rinishiga o\'tish</button></div>';
+document.querySelector("main").appendChild(v);
+$("mview-pc").addEventListener("click",function(){try{localStorage.setItem("az_mob","0")}catch(e){}location.href=location.pathname+"?m=0"});
+/* ulanganini va muharrir ochilganini kuzatish */
+function sync(){
+  R.classList.toggle("mob-in",!$("materials").hidden);
+  var ed=!$("editor").hidden,was=R.classList.contains("ed-open");R.classList.toggle("ed-open",ed);
+  if(was&&!ed){setTab("songs",false)}
+  var s=$("ed-save");$("msave-b").disabled=s.disabled;$("msave-b").textContent=s.textContent;
+}
+var mo=new MutationObserver(sync);
+mo.observe($("materials"),{attributes:true,attributeFilter:["hidden"]});
+mo.observe($("editor"),{attributes:true,attributeFilter:["hidden"]});
+mo.observe($("ed-save"),{attributes:true,attributeFilter:["disabled"],childList:true,characterData:true,subtree:true});
+sync();
+$("msave-b").addEventListener("click",function(){$("ed-save").scrollIntoView({block:"center"});$("ed-save").click()});
+$("msave-x").addEventListener("click",function(){$("ed-cancel").click()});
+/* izohlar soni nishonchasi */
+function cmBadge(){var n=[].filter.call(document.querySelectorAll("#cm-body .acm:not(.off)"),function(a){return !a.querySelector(".rep")}).length,b=$("mtab-cm");b.hidden=!n;b.textContent=n>99?"99+":n}
+new MutationObserver(cmBadge).observe($("cm-body"),{childList:true,subtree:true});
 })();
 </script>
 </body>
