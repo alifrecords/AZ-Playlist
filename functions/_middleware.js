@@ -34,11 +34,32 @@ class Head {
   }
 }
 
+// Qo'shiqni istalgan joyidan chalish uchun brauzer faylning bir qismini so'raydi (Range).
+// Server o'zi qism bermasa (to'liq fayl qaytarsa) — shu yerda kerakli qismini kesib beramiz.
+async function ranged(request, res) {
+  const range = request.headers.get("range");
+  if (res.status !== 200) return res;
+  if (!range) { const h = new Headers(res.headers); h.set("Accept-Ranges", "bytes"); return new Response(res.body, { status: 200, headers: h }); }
+  const m = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+  if (!m || (m[1] === "" && m[2] === "")) return res;
+  const buf = await res.arrayBuffer(), size = buf.byteLength;
+  let start, end;
+  if (m[1] === "") { start = Math.max(0, size - Number(m[2])); end = size - 1; }
+  else { start = Number(m[1]); end = m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1); }
+  const h = new Headers(res.headers);
+  h.delete("content-length"); h.set("Accept-Ranges", "bytes");
+  if (start >= size || start > end) { h.set("Content-Range", "bytes */" + size); return new Response(null, { status: 416, headers: h }); }
+  h.set("Content-Range", "bytes " + start + "-" + end + "/" + size);
+  h.set("Content-Length", String(end - start + 1));
+  return new Response(buf.slice(start, end + 1), { status: 206, headers: h });
+}
+
 export async function onRequest(ctx) {
   const { request, next, env } = ctx;
   const url = new URL(request.url);
   const isPage = request.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html");
   const res = await next();
+  if (request.method === "GET" && /^\/(music|media)\//.test(url.pathname)) return ranged(request, res);
   if (!isPage || !(res.headers.get("content-type") || "").includes("text/html")) return res;
   try {
     const pr = await env.ASSETS.fetch(new URL("/playlist.json", url.origin));

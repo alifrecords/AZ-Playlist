@@ -170,6 +170,11 @@ footer{margin-top:18px;text-align:center}
 .wv{display:flex;align-items:center;gap:2px;height:56px;cursor:pointer;touch-action:none}
 .wv i{flex:1;border-radius:2px;background:var(--line);min-height:3px}
 .wv i.on{background:var(--accent)}
+.wvw{position:relative}
+.wvw .wph{position:absolute;top:2px;bottom:2px;width:2px;margin-left:-1px;border-radius:2px;background:var(--fg);box-shadow:0 0 0 3px rgba(0,0,0,.35);pointer-events:none;left:0;transition:left .12s linear}
+.wvw.drag .wph{transition:none;background:var(--accent);width:3px}
+.wvw .wtip{position:absolute;bottom:calc(100% + 6px);transform:translateX(-50%);padding:4px 9px;border-radius:8px;background:var(--fg);color:var(--bg);font:700 13px/1.2 var(--mono,monospace);pointer-events:none;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.wvw.drag .wv i:not(.on){background:color-mix(in srgb,var(--line) 80%,var(--fg) 20%)}
 .times{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:-8px}
 .ctrls{display:flex;justify-content:center;align-items:center;gap:14px}
 .ctrls .sk{width:52px;height:52px;border-radius:50%;border:0;background:transparent;color:var(--fg);display:grid;place-items:center;cursor:pointer;position:relative}
@@ -325,7 +330,7 @@ footer{margin-top:18px;text-align:center}
     <div class="shbar"><button class="iconbtn" type="button" id="sh-close" aria-label="Yopish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><span class="tag acc" id="sh-mode"></span><span style="display:flex;gap:8px"><button class="iconbtn" type="button" id="sh-cast" hidden aria-label="Televizor yoki kolonkaga uzatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-6"/><path d="M3 12a7 7 0 0 1 7 7M3 16a3 3 0 0 1 3 3"/><circle cx="3.5" cy="19" r=".6" fill="currentColor"/></svg></button><button class="iconbtn" type="button" id="sh-share" aria-label="Qo'shiqni ulashish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg></button></span></div>
     <div id="sh-car"></div>
     <div class="ttl"><h2 id="sh-title"></h2><p id="sh-sub"></p></div>
-    <div class="wv" id="sh-wave" role="slider" tabindex="0" aria-label="Qo'shiq bo'ylab o'tish" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+    <div class="wvw" id="sh-wvw"><div class="wv" id="sh-wave" role="slider" tabindex="0" aria-label="Qo'shiq bo'ylab o'tish" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div><i class="wph" id="sh-wph" aria-hidden="true"></i><b class="wtip" id="sh-wtip" hidden></b></div>
     <div class="times mono"><span id="sh-cur">0:00</span><span id="sh-dur">0:00</span></div>
     <div class="ctrls">
       <button class="sk" type="button" id="sh-prev" aria-label="Oldingi qo'shiq"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
@@ -716,7 +721,7 @@ function paintProgress(){
   $("mini-bar").style.width=(p*100)+"%";
   if(!$("sheet").hidden){
     $("sh-cur").textContent=fmt(au.currentTime);$("sh-dur").textContent=fmt(d);
-    var bars=$("sh-wave").children,lit=Math.round(p*bars.length);for(var i=0;i<bars.length;i++)bars[i].className=i<lit?"on":"";
+    if(!WDRAG){var bars=$("sh-wave").children,lit=Math.round(p*bars.length);for(var i=0;i<bars.length;i++)bars[i].className=i<lit?"on":"";$("sh-wph").style.left=(Math.min(1,p)*100)+"%"}
     $("sh-wave").setAttribute("aria-valuenow",String(Math.round(p*100)));
   }
 }
@@ -796,12 +801,33 @@ $("sh-next").addEventListener("click",function(){step(1)});
 $("sh-back").addEventListener("click",function(){au.currentTime=Math.max(0,au.currentTime-10);hap()});
 $("sh-fwd").addEventListener("click",function(){au.currentTime=Math.min((au.duration||0)-0.2,au.currentTime+10);hap()});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();if(e.key===" "&&e.target===document.body&&cur.t){e.preventDefault();toggle()}});
-(function(){var w=$("sh-wave"),drag=false;
-  function seek(cx){var r=w.getBoundingClientRect(),x=Math.min(Math.max(0,(cx-r.left)/r.width),0.999);if(au.duration)au.currentTime=x*au.duration;paintProgress()}
-  w.addEventListener("pointerdown",function(e){drag=true;try{w.setPointerCapture(e.pointerId)}catch(_){}seek(e.clientX)});
-  w.addEventListener("pointermove",function(e){if(drag)seek(e.clientX)});
-  w.addEventListener("pointerup",function(){drag=false});w.addEventListener("pointercancel",function(){drag=false});
-  w.addEventListener("keydown",function(e){if(e.key==="ArrowRight"){au.currentTime+=5;e.preventDefault()}if(e.key==="ArrowLeft"){au.currentTime=Math.max(0,au.currentTime-5);e.preventDefault()}});
+/* Qo'shiq bo'ylab o'tish (AIMP kabi): bosilgan joydan chaladi; barmoq/sichqoncha bilan surilganda
+   vaqt ko'rsatib turadi va qo'yib yuborilganda o'sha joydan davom etadi (surish paytida ovoz uzilmaydi). */
+var WDRAG=false;
+(function(){var w=$("sh-wave"),box=$("sh-wvw"),tip=$("sh-wtip"),ph=$("sh-wph"),drag=null;
+  function dur(){return au.duration&&isFinite(au.duration)?au.duration:(cur.t?durOf(cur.t,cur.mode):0)}
+  function frac(cx){var r=w.getBoundingClientRect();return Math.min(Math.max(0,(cx-r.left)/r.width),0.999)}
+  function show(x){var d=dur();tip.hidden=!d;tip.textContent=fmt(x*d)+" / "+fmt(d);tip.style.left=Math.min(Math.max(x*100,7),93)+"%"}
+  function paint(x){var bars=w.children,lit=Math.round(x*bars.length);for(var i=0;i<bars.length;i++)bars[i].className=i<lit?"on":"";ph.style.left=(x*100)+"%"}
+  function go(x){var d=dur();if(!d)return;var t=x*d;
+    if(au.readyState>=1)au.currentTime=t;
+    else au.addEventListener("loadedmetadata",function(){try{au.currentTime=t}catch(_){}},{once:true});
+    paintProgress()}
+  w.addEventListener("pointerdown",function(e){if(e.button>0)return;drag={id:e.pointerId};WDRAG=true;box.classList.add("drag");try{w.setPointerCapture(e.pointerId)}catch(_){}var x=frac(e.clientX);paint(x);show(x);e.preventDefault()});
+  w.addEventListener("pointermove",function(e){var x=frac(e.clientX);
+    if(drag){paint(x);show(x)}
+    else if(e.pointerType==="mouse")show(x); /* kompyuterda: sichqoncha ustida turgan joy vaqti */
+  });
+  function end(e,apply){if(!drag)return;drag=null;WDRAG=false;box.classList.remove("drag");tip.hidden=true;if(apply)go(frac(e.clientX));else paintProgress();hap&&hap()}
+  w.addEventListener("pointerup",function(e){end(e,true)});
+  w.addEventListener("pointercancel",function(e){end(e,false)});
+  w.addEventListener("pointerleave",function(){if(!drag)tip.hidden=true});
+  w.addEventListener("keydown",function(e){var d=dur();if(!d)return;
+    if(e.key==="ArrowRight"){au.currentTime=Math.min(d-0.2,au.currentTime+5);e.preventDefault()}
+    if(e.key==="ArrowLeft"){au.currentTime=Math.max(0,au.currentTime-5);e.preventDefault()}
+    if(e.key==="Home"){au.currentTime=0;e.preventDefault()}
+    if(/^[0-9]$/.test(e.key)){au.currentTime=d*(+e.key)/10;e.preventDefault()}
+  });
 })();
 (function(){var s=$("sheet"),y0=null,dy=0;
   s.addEventListener("touchstart",function(e){if(s.scrollTop>0||e.target.closest(".wv,.car"))return;y0=e.touches[0].clientY;dy=0},{passive:true});
